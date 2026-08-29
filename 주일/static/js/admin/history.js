@@ -142,7 +142,18 @@
     var wd = window.utils.weekdayLabel(date);
     var label = (wd === '일') ? '일요일' : (wd === '수') ? '수요일' : '기타(' + wd + '요일)';
     window.dialogManager.confirm(date + ' (' + label + ') 기준 보고서를 생성하시겠습니까?', { title: '보고서 생성', okLabel: '생성' }, function () {
-      window.location.href = '/api/admin/report?date=' + encodeURIComponent(date);
+      window.api.getReport('/api/admin/report?date=' + encodeURIComponent(date))
+        .then(function (html) {
+          var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+          var url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        })
+        .catch(function (e) {
+          window.dialogManager.alert(
+            (e && e.message) || '보고서를 불러올 수 없습니다.',
+            { title: '보고서 생성' });
+        });
     });
   }
 

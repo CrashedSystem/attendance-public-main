@@ -6,19 +6,48 @@
   'use strict';
 
   /**
+   * 로그인 후 저장된 관리자 PIN 반환. 없으면 ''.
+   * @returns {string}
+   */
+  function currentPin() {
+    if (window.authManager && typeof window.authManager.getPin === 'function') {
+      return window.authManager.getPin() || '';
+    }
+    return '';
+  }
+
+  /**
    * 공용 fetch 래퍼 — JSON 응답을 파싱해 반환.
+   * 로그인한 관리자 PIN이 저장되어 있으면 모든 요청에 X-Admin-Pin 헤더를 자동 포함한다.
    * @param {string} path - API 경로
    * @param {Object} [opts] - fetch 옵션 (method, body, headers 등)
    * @returns {Promise<Object>} 파싱된 JSON
    */
   function request(path, opts) {
     opts = opts || {};
+    var headers = { 'Content-Type': 'application/json' };
+    var pin = currentPin();
+    if (pin) headers['X-Admin-Pin'] = pin;
     var init = {
       method: opts.method || 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      headers: headers
     };
     if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
     return fetch(path, init).then(function (r) { return r.json(); });
+  }
+
+  /**
+   * HTML 응답(보고서 등)을 관리자 PIN 헤더와 함께 가져와 문자열로 반환.
+   * @param {string} path - HTML 경로
+   * @returns {Promise<string>}
+   */
+  function getReport(path) {
+    var pin = currentPin();
+    var headers = pin ? { 'X-Admin-Pin': pin } : {};
+    return fetch(path, { method: 'GET', headers: headers }).then(function (r) {
+      if (r.status === 401) throw new Error('관리자 인증이 필요합니다.');
+      return r.text();
+    });
   }
 
   /* ---------- 공개(메인) ---------- */
@@ -181,6 +210,7 @@
 
   window.api = {
     request: request,
+    getReport: getReport,
     getMode: getMode,
     searchUsers: searchUsers,
     checkin: checkin,

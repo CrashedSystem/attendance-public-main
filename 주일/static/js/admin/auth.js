@@ -5,6 +5,7 @@
   'use strict';
 
   var pinValue = '';
+  var adminPin = '';
   var KP = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '지우기', '0', '확인'];
 
   /** PIN 키패드 DOM 생성. */
@@ -28,7 +29,11 @@
       if (!pinValue) return;
       window.api.adminLogin(pinValue)
         .then(function (res) {
-          if (res.ok) { openAdmin(); }
+          if (res.ok) {
+            adminPin = pinValue;
+            pinValue = '';
+            openAdmin();
+          }
           else { window.$('pin-error').textContent = res.msg || 'PIN 오류'; pinValue = ''; refreshPin(); }
         });
       return;
@@ -69,8 +74,26 @@
     });
   }
 
+  /**
+   * 저장된 관리자 PIN 반환 (API 헤더 자동 첨부용).
+   * @returns {string}
+   */
+  function getPin() {
+    return adminPin;
+  }
+
+  /**
+   * 관리자 PIN 저장/갱신.
+   * @param {string} pin
+   */
+  function setPin(pin) {
+    adminPin = pin;
+  }
+
   window.authManager = {
     init: init,
-    openAdmin: openAdmin
+    openAdmin: openAdmin,
+    getPin: getPin,
+    setPin: setPin
   };
 })();

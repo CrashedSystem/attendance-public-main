@@ -4,14 +4,33 @@
 (function () {
   'use strict';
 
+  /**
+   * 보고서 HTML을 PIN 헤더와 함께 가져와 새 탭에서 연다.
+   * @param {string} path - 보고서 경로 (/api/report, /api/report/a4)
+   */
+  function openReport(path) {
+    window.api.getReport(path)
+      .then(function (html) {
+        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      })
+      .catch(function (e) {
+        window.dialogManager.alert(
+          (e && e.message) || '보고서를 불러올 수 없습니다.',
+          { title: '보고서 보기' });
+      });
+  }
+
   /** 종합 보고서 열기. */
   function onReport() {
-    window.location.href = '/api/report';
+    openReport('/api/report');
   }
 
   /** A4 보고서 열기. */
   function onReportA4() {
-    window.location.href = '/api/report/a4';
+    openReport('/api/report/a4');
   }
 
   /** 팀별 보고서 내보내기. */
