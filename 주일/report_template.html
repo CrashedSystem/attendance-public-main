@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출석 현황 그래프</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family:'Malgun Gothic','맑은 고딕',sans-serif; background:#e9ecef; margin:0; padding:16px; color:#333; }
+  .sheet { background:#fff; max-width:1100px; margin:0 auto; padding:18px 22px 22px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.12); }
+  h1 { text-align:center; margin:0 0 2px; font-size:22px; }
+  .sub { text-align:center; color:#888; margin:0 0 12px; font-size:12px; }
+  .stat { display:flex; gap:10px; justify-content:center; margin-bottom:12px; flex-wrap:wrap; }
+  .stat .box { background:#eef1f8; border-radius:8px; padding:6px 16px; text-align:center; min-width:96px; }
+  .stat .box b { display:block; font-size:18px; color:#3b5bdb; }
+  .stat .box span { font-size:11px; color:#666; }
+  .stat .box.up { border:2px solid #2f9e44; } .stat .box.up b { color:#2f9e44; }
+  .stat .box.down { border:2px solid #e03131; } .stat .box.down b { color:#e03131; }
+  .stat .box.fade b { color:#adb5bd; } .stat .box.fade span { color:#adb5bd; }
+  .card { margin-bottom:12px; }
+  .card h2 { font-size:14px; margin:0 0 6px; padding:6px 10px; background:#f1f3f5; border-left:4px solid #3b5bdb; border-radius:4px; }
+  .teamhead { text-align:center; font-size:11px; margin:8px 0 4px; color:#3b5bdb; font-weight:bold; }
+  table.abs { width:100%; border-collapse:collapse; font-size:10px; }
+  table.abs th, table.abs td { border:1px solid #dee2e6; padding:2px 6px; text-align:center; }
+  table.abs th { background:#f1f3f5; }
+  .w1 { background:#fff4e6; } .w2 { background:#ffe3e3; }
+  .w3 { background:#ffd8a8; } .w4 { background:#ffa8a8; }
+  table.abs tr.unauth td { background:#ffc9c9 !important; color:#c92a2a; font-weight:bold; }
+  .badge { display:inline-block; min-width:16px; padding:1px 6px; border-radius:9px; font-size:10px; font-weight:bold; color:#fff; }
+  .badge.b1 { background:#e8590c; } .badge.b2 { background:#e03131; } .badge.b3 { background:#c2255c; } .badge.b4 { background:#9c36b5; }
+  .nophone { color:#adb5bd; }
+  .nb { display:inline-block; padding:0 6px; margin-left:4px; border-radius:8px; background:#d3f9d8; color:#2b8a3e; font-weight:bold; font-size:9px; vertical-align:1px; }
+  .wtag { display:inline-block; padding:1px 6px; margin:1px 2px; border-radius:4px; background:#e7f5ff; color:#1971c2; font-size:9px; font-weight:bold; white-space:nowrap; }
+  .wflow { margin:0 2px; color:#adb5bd; font-weight:bold; }
+  @page { size: A4; margin: 8mm; }
+  @media print {
+    body { background:#fff; padding:0; }
+    .sheet { box-shadow:none; border-radius:0; padding:0; max-width:100%; }
+    table.abs { font-size:9px; }
+    table.abs th, table.abs td { padding:1px 4px; }
+    .stat { margin-bottom:6px; }
+    .card { margin-bottom:6px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+<h1>출석 현황</h1>
+<p class="sub">수요일 예배 · 2026-08-26 ~ 2026-08-26 · 총 9건</p>
+
+<div class="card">
+  <h2>출석 통계 요약</h2>
+  <div class="stat">
+    <div class="box"><b>2026-08-26 9명</b><span>이번 주 출석</span></div>
+    <div class="box fade"><b>-</b><span>저번 주 출석</span></div>
+    <div class="box"><b>1</b><span>주(일) 수</span></div>
+    <div class="box"><b>9.0</b><span>평균 출석/주</span></div>
+    <div class="box"><b>2026-08-26 9명</b><span>최다 출석</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>팀별 출석 인원 (이번 주)</h2>
+  <div class="table-wrap" id="team-wrap"></div>
+</div>
+
+<div class="card">
+  <h2>새신우 현황 · 총 0명</h2>
+  <div class="table-wrap" id="newbie-wrap"></div>
+</div>
+
+<div class="card">
+  <h2>연속 미출석자 명단 (1~4주) · 총 17명</h2>
+  <div class="table-wrap" id="abs-wrap"></div>
+</div>
+
+<div class="card">
+  <h2>이달의 생일자 (8월) · 총 2명</h2>
+  <div class="table-wrap" id="bday-wrap"></div>
+</div>
+</div>
+
+
+<script>
+const C = {"dates": ["2026-08-26"], "counts": [9], "deltas": [null], "rates": [null], "total": 9, "days": 1, "avg": 9.0, "thiswk": "2026-08-26 9명", "lastwk": "", "maxd": "2026-08-26 9명", "absent": [{"name": "강지성", "aff": "군지대", "team": "충성팀(염성수&김나리)", "phone": "", "w": 1, "nb": false}, {"name": "구본준", "aff": "의무대", "team": "온유팀(김은혜)", "phone": "010-9211-4696", "w": 1, "nb": false}, {"name": "권민주", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-6201-8097", "w": 1, "nb": false}, {"name": "김승진", "aff": "방공", "team": "사랑팀(김기표&김현진)", "phone": "010-3712-3725", "w": 1, "nb": false}, {"name": "김원영", "aff": "정보대", "team": "화평팀(송지환&이미선)", "phone": "", "w": 1, "nb": false}, {"name": "김주원", "aff": "102직할", "team": "사랑팀(김기표&김현진)", "phone": "010-2652-5433", "w": 1, "nb": false}, {"name": "김지성", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-2974-5375", "w": 1, "nb": false}, {"name": "나솔찬", "aff": "군지대", "team": "충성팀(염성수&김나리)", "phone": "", "w": 1, "nb": false}, {"name": "백민승", "aff": "본부대", "team": "화평팀(송지환&이미선)", "phone": "", "w": 1, "nb": false}, {"name": "백윤기", "aff": "군지대", "team": "충성팀(염성수&김나리)", "phone": "010-7763-4115", "w": 1, "nb": false}, {"name": "송인수", "aff": "수색대", "team": "화평팀(송지환&이미선)", "phone": "", "w": 1, "nb": false}, {"name": "심예준", "aff": "공병", "team": "자비팀(조예진)", "phone": "010-4729-3944", "w": 1, "nb": false}, {"name": "엄호성", "aff": "군지대", "team": "충성팀(염성수&김나리)", "phone": "010-4931-8735", "w": 1, "nb": false}, {"name": "오노아", "aff": "방첩대", "team": "기쁨팀(박현민)", "phone": "", "w": 1, "nb": false}, {"name": "유이레", "aff": "공병", "team": "자비팀(조예진)", "phone": "010-3602-5774", "w": 1, "nb": false}, {"name": "윤영석", "aff": "102군지", "team": "사랑팀(김기표&김현진)", "phone": "010-2204-7309", "w": 1, "nb": false}, {"name": "조건혁", "aff": "2대대", "team": "인내팀(고은솔)", "phone": "010-3436-2361", "w": 1, "nb": false}], "bday": [{"name": "김주원", "aff": "102직할", "team": "사랑팀(김기표&김현진)", "phone": "010-2652-5433", "bday": "8월 20일", "day": 20}, {"name": "김정현", "aff": "의무대", "team": "온유팀(김은혜)", "phone": "010-5966-2108", "bday": "8월 21일", "day": 21}], "teams": [{"team": "온유팀(김은혜)", "count": 3}, {"team": "충성팀(염성수&김나리)", "count": 3}, {"team": "기쁨팀(박현민)", "count": 2}, {"team": "사랑팀(김기표&김현진)", "count": 1}], "team_attendees": [], "newbies": []};
+/* 연속 미출석자 명단 (1~4주) */
+(function () {
+  const badges = { 1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4' };
+  const useReason = C.absent.length > 0 && C.absent[0].hasOwnProperty('reason');
+  const rows = C.absent.map(function (a) {
+    let flow;
+    if (useReason) {
+      flow = String(a.reason || '').split('→').map(function (s) {
+        s = s.trim();
+        return s ? '<span class="wtag">' + s + '</span>' : '';
+      }).filter(Boolean).join('<span class="wflow">→</span>');
+      if (!flow) flow = '<span class="wtag">-</span>';
+    } else {
+      flow = a.team || '';
+    }
+    return '<tr class="w' + a.w + (a.unauth ? ' unauth' : '') + '"><td><span class="badge ' + badges[a.w] + '">' + a.w + '주</span></td>' +
+      '<td>' + a.name + (a.nb ? ' <span class="nb">새신우</span>' : '') + '</td><td>' + a.aff + '</td><td>' + flow + '</td>' +
+      '<td>' + (a.phone ? a.phone : '<span class="nophone">-</span>') + '</td></tr>';
+  }).join('');
+  var col = useReason ? '미출석 사유' : '팀';
+  var html = '<table class="abs"><tr><th>미출석</th><th>이름</th><th>소속</th><th>' + col + '</th><th>휴대폰</th></tr>' + rows + '</table>';
+  document.getElementById('abs-wrap').innerHTML = html;
+})();
+
+/* 팀별 출석 인원 (이번 주) */
+(function () {
+  const rows = C.teams.map(function (t) {
+    return '<tr><td>' + t.team + '</td><td>' + t.count + '명</td></tr>';
+  }).join('');
+  var html = '<table class="abs"><tr><th>팀</th><th>출석 인원</th></tr>' + rows + '</table>';
+  document.getElementById('team-wrap').innerHTML = html;
+})();
+
+/* 새신우 현황 */
+(function () {
+  const list = C.newbies || [];
+  if (!list.length) {
+    document.getElementById('newbie-wrap').innerHTML = '<p style="text-align:center;color:#888;margin:4px 0">새신우가 없습니다.</p>';
+    return;
+  }
+  const badges = { 1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4' };
+  const rows = list.map(function (n, idx) {
+    let att;
+    if (n.att) {
+      att = '출석 ' + n.att;
+    } else {
+      const wk = n.w || 0;
+      att = wk >= 1
+        ? '<span class="badge ' + badges[Math.min(wk, 4)] + '">' + Math.min(wk, 99) + '주 연속 미출석</span>'
+        : '<span style="color:#e03131">미출석</span>';
+    }
+    const cls = (!n.att && n.w >= 1) ? ' class="w' + Math.min(n.w, 4) + '"' : '';
+    return '<tr' + cls + '><td>' + (idx + 1) + '</td><td>' + n.name + '</td><td>' + n.aff + '</td><td>' + n.team + '</td>' +
+      '<td>' + (n.phone ? n.phone : '<span class="nophone">-</span>') + '</td>' +
+      '<td>' + att + '</td></tr>';
+  }).join('');
+  var html = '<table class="abs"><tr><th>No</th><th>이름</th><th>소속</th><th>팀</th><th>휴대폰</th><th>이번 주 출결</th></tr>' + rows + '</table>';
+  document.getElementById('newbie-wrap').innerHTML = html;
+})();
+
+/* 이달의 생일자 - 팀별로 묶어 표시 */
+(function () {
+  const byTeam = {};
+  C.bday.forEach(function (b) {
+    const k = b.team || '-';
+    if (!byTeam[k]) byTeam[k] = [];
+    byTeam[k].push(b);
+  });
+  const teams = Object.keys(byTeam).sort();
+  let html = '';
+  teams.forEach(function (k) {
+    html += '<div class="teamhead">' + k + '</div>';
+    const rows = byTeam[k].map(function (b) {
+      return '<tr><td>' + b.bday + '</td><td>' + b.name + '</td><td>' + b.aff + '</td>' +
+        '<td>' + (b.phone ? b.phone : '<span class="nophone">-</span>') + '</td></tr>';
+    }).join('');
+    html += '<table class="abs"><tr><th>생일</th><th>이름</th><th>소속</th><th>휴대폰</th></tr>' + rows + '</table>';
+  });
+  document.getElementById('bday-wrap').innerHTML = html;
+})();
+</script>
+</body>
+</html>

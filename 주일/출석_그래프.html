@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출석 현황 그래프</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family:'Malgun Gothic','맑은 고딕',sans-serif; background:#e9ecef; margin:0; padding:16px; color:#333; }
+  .sheet { background:#fff; max-width:1100px; margin:0 auto; padding:18px 22px 22px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.12); }
+  h1 { text-align:center; margin:0 0 2px; font-size:22px; }
+  .sub { text-align:center; color:#888; margin:0 0 12px; font-size:12px; }
+  .stat { display:flex; gap:10px; justify-content:center; margin-bottom:12px; flex-wrap:wrap; }
+  .stat .box { background:#eef1f8; border-radius:8px; padding:6px 16px; text-align:center; min-width:96px; }
+  .stat .box b { display:block; font-size:18px; color:#3b5bdb; }
+  .stat .box span { font-size:11px; color:#666; }
+  .stat .box.up { border:2px solid #2f9e44; } .stat .box.up b { color:#2f9e44; }
+  .stat .box.down { border:2px solid #e03131; } .stat .box.down b { color:#e03131; }
+  .stat .box.fade b { color:#adb5bd; } .stat .box.fade span { color:#adb5bd; }
+  .card { margin-bottom:12px; }
+  .card h2 { font-size:14px; margin:0 0 6px; padding:6px 10px; background:#f1f3f5; border-left:4px solid #3b5bdb; border-radius:4px; }
+  .teamhead { text-align:center; font-size:11px; margin:8px 0 4px; color:#3b5bdb; font-weight:bold; }
+  table.abs { width:100%; border-collapse:collapse; font-size:10px; }
+  table.abs th, table.abs td { border:1px solid #dee2e6; padding:2px 6px; text-align:center; }
+  table.abs th { background:#f1f3f5; }
+  .w1 { background:#fff4e6; } .w2 { background:#ffe3e3; }
+  .w3 { background:#ffd8a8; } .w4 { background:#ffa8a8; }
+  .badge { display:inline-block; min-width:16px; padding:1px 6px; border-radius:9px; font-size:10px; font-weight:bold; color:#fff; }
+  .badge.b1 { background:#e8590c; } .badge.b2 { background:#e03131; } .badge.b3 { background:#c2255c; } .badge.b4 { background:#9c36b5; }
+  .nophone { color:#adb5bd; }
+  .nb { display:inline-block; padding:0 6px; margin-left:4px; border-radius:8px; background:#d3f9d8; color:#2b8a3e; font-weight:bold; font-size:9px; vertical-align:1px; }
+  @page { size: A4; margin: 8mm; }
+  @media print {
+    body { background:#fff; padding:0; }
+    .sheet { box-shadow:none; border-radius:0; padding:0; max-width:100%; }
+    table.abs { font-size:9px; }
+    table.abs th, table.abs td { padding:1px 4px; }
+    .stat { margin-bottom:6px; }
+    .card { margin-bottom:6px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+<h1>출석 현황</h1>
+<p class="sub">일요일 예배 · 2026-04-19 ~ 2026-08-16 · 총 1262건</p>
+
+<div class="card">
+  <h2>출석 통계 요약</h2>
+  <div class="stat">
+    <div class="box"><b>2026-08-16 57명</b><span>이번 주 출석</span></div>
+    <div class="box fade"><b>2026-08-09 65명</b><span>저번 주 출석</span></div>
+    <div class="box"><b>18</b><span>주(일) 수</span></div>
+    <div class="box"><b>70.1</b><span>평균 출석/주</span></div>
+    <div class="box"><b>2026-04-19 99명</b><span>최다 출석</span></div>
+    <div class="box down"><b>2026-08-16 -8명 (-12.3%)</b><span>최근 변화 (이전 주 대비)</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>팀별 출석 인원 (이번 주)</h2>
+  <div class="table-wrap" id="team-wrap"></div>
+</div>
+
+<div class="card">
+  <h2>새신우 현황 · 총 0명</h2>
+  <div class="table-wrap" id="newbie-wrap"></div>
+</div>
+
+<div class="card">
+  <h2>연속 미출석자 명단 (1~4주) · 총 40명</h2>
+  <div class="table-wrap" id="abs-wrap"></div>
+</div>
+
+<div class="card">
+  <h2>이달의 생일자 (8월) · 총 12명</h2>
+  <div class="table-wrap" id="bday-wrap"></div>
+</div>
+</div>
+
+
+<script>
+const C = {"dates": ["2026-05-03", "2026-05-10", "2026-05-17", "2026-05-24", "2026-05-31", "2026-06-07", "2026-06-14", "2026-06-21", "2026-06-28", "2026-07-05", "2026-07-12", "2026-07-19", "2026-07-26", "2026-08-02", "2026-08-09", "2026-08-16"], "counts": [65, 78, 68, 70, 66, 74, 75, 69, 55, 72, 73, 69, 69, 66, 65, 57], "deltas": [-7, 13, -10, 2, -4, 8, 1, -6, -14, 17, 1, -4, 0, -3, -1, -8], "rates": [-9.7, 20.0, -12.8, 2.9, -5.7, 12.1, 1.4, -8.0, -20.3, 30.9, 1.4, -5.5, 0.0, -4.3, -1.5, -12.3], "total": 1262, "days": 18, "avg": 70.1, "thiswk": "2026-08-16 57명", "lastwk": "2026-08-09 65명", "maxd": "2026-04-19 99명", "absent": [{"name": "강은총", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-2497-1373", "w": 1}, {"name": "기현서", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-5709-8611", "w": 1}, {"name": "김다니엘", "aff": "76정비대", "team": "인내팀(고은솔)", "phone": "010-5388-8112", "w": 1}, {"name": "김동영", "aff": "방공", "team": "사랑팀(김기표&김현진)", "phone": "", "w": 1}, {"name": "김민상", "aff": "정보통신", "team": "온유팀(정진오&조예진)", "phone": "010-5096-6368", "w": 1}, {"name": "김태인", "aff": "76정비대", "team": "인내팀(고은솔)", "phone": "010-2466-3397", "w": 1}, {"name": "김현진", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-4503-8002", "w": 1}, {"name": "김호연", "aff": "수색대", "team": "화평팀(송지환&이미선)", "phone": "", "w": 1}, {"name": "박정민", "aff": "2대대", "team": "인내팀(고은솔)", "phone": "010-5742-9959", "w": 1}, {"name": "박주원", "aff": "공병", "team": "온유팀(정진오&조예진)", "phone": "010-9159-3186", "w": 1}, {"name": "배용민", "aff": "102직할", "team": "사랑팀(김기표&김현진)", "phone": "010-6876-2669", "w": 1}, {"name": "손찬슬", "aff": "방공", "team": "사랑팀(김기표&김현진)", "phone": "010-2900-2721", "w": 1}, {"name": "원영원", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-3209-0811", "w": 1}, {"name": "원희태", "aff": "방공", "team": "사랑팀(김기표&김현진)", "phone": "010-6756-0319", "w": 1}, {"name": "이상무", "aff": "76정비대", "team": "인내팀(고은솔)", "phone": "010-4779-0378", "w": 1}, {"name": "이우진", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-4817-2101", "w": 1}, {"name": "이후성", "aff": "2대대", "team": "인내팀(고은솔)", "phone": "010-7795-7844", "w": 1}, {"name": "장우찬", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-6744-6264", "w": 1}, {"name": "전명관", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "", "w": 1}, {"name": "최재홍", "aff": "공병", "team": "온유팀(정진오&조예진)", "phone": "010-3877-7472", "w": 1}, {"name": "김정욱", "aff": "본부대", "team": "화평팀(송지환&이미선)", "phone": "", "w": 2}, {"name": "김현준", "aff": "본부대", "team": "화평팀(송지환&이미선)", "phone": "010-8348-1345", "w": 2}, {"name": "안제영", "aff": "의무대", "team": "온유팀(정진오&조예진)", "phone": "010-5236-8762", "w": 2}, {"name": "이건휘", "aff": "정보통신", "team": "온유팀(정진오&조예진)", "phone": "010-2511-3538", "w": 2}, {"name": "황신기", "aff": "수색대", "team": "화평팀(송지환&이미선)", "phone": "010-3682-9865", "w": 2}, {"name": "곽지훈", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-4964-3140", "w": 3}, {"name": "김동현", "aff": "본부대", "team": "화평팀(송지환&이미선)", "phone": "010-8699-7404", "w": 3}, {"name": "김명기", "aff": "76정비대", "team": "인내팀(고은솔)", "phone": "", "w": 3}, {"name": "김혁수", "aff": "76정비대", "team": "인내팀(고은솔)", "phone": "010-2787-9419", "w": 3}, {"name": "황직찬", "aff": "군사경찰", "team": "기쁨팀(박현민)", "phone": "010-8890-1972", "w": 3}, {"name": "김민준", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-2051-6323", "w": 4}, {"name": "김승안", "aff": "공병", "team": "온유팀(정진오&조예진)", "phone": "010-4206-7203", "w": 4}, {"name": "김태오", "aff": "102포병", "team": "사랑팀(김기표&김현진)", "phone": "010-3717-1535", "w": 4}, {"name": "김형률", "aff": "공병", "team": "온유팀(정진오&조예진)", "phone": "010-4318-9331", "w": 4}, {"name": "손영준", "aff": "공병", "team": "온유팀(정진오&조예진)", "phone": "010-2587-6366", "w": 4}, {"name": "윤동호", "aff": "공병", "team": "온유팀(정진오&조예진)", "phone": "010-5924-9867", "w": 4}, {"name": "이건형", "aff": "102포병", "team": "사랑팀(김기표&김현진)", "phone": "010-2504-9088", "w": 4}, {"name": "이지현", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-5918-2640", "w": 4}, {"name": "정창수", "aff": "76정비대", "team": "인내팀(고은솔)", "phone": "010-3603-9130", "w": 4}, {"name": "최영신", "aff": "정보통신", "team": "온유팀(정진오&조예진)", "phone": "010-7929-8293", "w": 4}], "bday": [{"name": "오서준", "aff": "정보통신", "team": "온유팀(정진오&조예진)", "phone": "010-9891-7083", "bday": "8월 1일", "day": 1}, {"name": "최은혁", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-2465-7805", "bday": "8월 2일", "day": 2}, {"name": "김도훈", "aff": "정보통신", "team": "온유팀(정진오&조예진)", "phone": "010-3340-8526", "bday": "8월 5일", "day": 5}, {"name": "조하늘", "aff": "102군지", "team": "사랑팀(김기표&김현진)", "phone": "010-9207-1348", "bday": "8월 7일", "day": 7}, {"name": "조선철", "aff": "102직할", "team": "사랑팀(김기표&김현진)", "phone": "010-4015-0961", "bday": "8월 9일", "day": 9}, {"name": "나선민", "aff": "102포병", "team": "사랑팀(김기표&김현진)", "phone": "010-3900-5170", "bday": "8월 11일", "day": 11}, {"name": "원영원", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-3209-0811", "bday": "8월 11일", "day": 11}, {"name": "김대현", "aff": "군사경찰", "team": "기쁨팀(박현민)", "phone": "010-7415-4624", "bday": "8월 17일", "day": 17}, {"name": "김민재", "aff": "공병", "team": "온유팀(정진오&조예진)", "phone": "010-8875-9258", "bday": "8월 18일", "day": 18}, {"name": "김태인", "aff": "76정비대", "team": "인내팀(고은솔)", "phone": "010-2466-3397", "bday": "8월 26일", "day": 26}, {"name": "임승찬", "aff": "군지대", "team": "충성팀(염성수&김나리)", "phone": "010-5285-2883", "bday": "8월 27일", "day": 27}, {"name": "박치훈", "aff": "1대대", "team": "충성팀(염성수&김나리)", "phone": "010-4399-0406", "bday": "8월 29일", "day": 29}], "teams": [{"team": "사랑팀(김기표&김현진)", "count": 15}, {"team": "온유팀(정진오&조예진)", "count": 15}, {"team": "충성팀(염성수&김나리)", "count": 11}, {"team": "화평팀(송지환&이미선)", "count": 9}, {"team": "기쁨팀(박현민)", "count": 4}, {"team": "인내팀(고은솔)", "count": 3}]};
+/* 연속 미출석자 명단 (1~4주) */
+(function () {
+  const badges = { 1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4' };
+  const rows = C.absent.map(function (a) {
+    return '<tr class="w' + a.w + '"><td><span class="badge ' + badges[a.w] + '">' + a.w + '주</span></td>' +
+      '<td>' + a.name + (a.nb ? ' <span class="nb">새신우</span>' : '') + '</td><td>' + a.aff + '</td><td>' + a.team + '</td>' +
+      '<td>' + (a.phone ? a.phone : '<span class="nophone">-</span>') + '</td></tr>';
+  }).join('');
+  var html = '<table class="abs"><tr><th>미출석</th><th>이름</th><th>소속</th><th>팀</th><th>휴대폰</th></tr>' + rows + '</table>';
+  document.getElementById('abs-wrap').innerHTML = html;
+})();
+
+/* 팀별 출석 인원 (이번 주) */
+(function () {
+  const rows = C.teams.map(function (t) {
+    return '<tr><td>' + t.team + '</td><td>' + t.count + '명</td></tr>';
+  }).join('');
+  var html = '<table class="abs"><tr><th>팀</th><th>출석 인원</th></tr>' + rows + '</table>';
+  document.getElementById('team-wrap').innerHTML = html;
+})();
+
+/* 새신우 현황 */
+(function () {
+  const list = C.newbies || [];
+  if (!list.length) {
+    document.getElementById('newbie-wrap').innerHTML = '<p style="text-align:center;color:#888;margin:4px 0">새신우가 없습니다.</p>';
+    return;
+  }
+  const badges = { 1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4' };
+  const rows = list.map(function (n, idx) {
+    let att;
+    if (n.att) {
+      att = '출석 ' + n.att;
+    } else {
+      const wk = n.w || 0;
+      att = wk >= 1
+        ? '<span class="badge ' + badges[Math.min(wk, 4)] + '">' + Math.min(wk, 99) + '주 연속 미출석</span>'
+        : '<span style="color:#e03131">미출석</span>';
+    }
+    const cls = (!n.att && n.w >= 1) ? ' class="w' + Math.min(n.w, 4) + '"' : '';
+    return '<tr' + cls + '><td>' + (idx + 1) + '</td><td>' + n.name + '</td><td>' + n.aff + '</td><td>' + n.team + '</td>' +
+      '<td>' + (n.phone ? n.phone : '<span class="nophone">-</span>') + '</td>' +
+      '<td>' + att + '</td></tr>';
+  }).join('');
+  var html = '<table class="abs"><tr><th>No</th><th>이름</th><th>소속</th><th>팀</th><th>휴대폰</th><th>이번 주 출결</th></tr>' + rows + '</table>';
+  document.getElementById('newbie-wrap').innerHTML = html;
+})();
+
+/* 이달의 생일자 - 팀별로 묶어 표시 */
+(function () {
+  const byTeam = {};
+  C.bday.forEach(function (b) {
+    const k = b.team || '-';
+    if (!byTeam[k]) byTeam[k] = [];
+    byTeam[k].push(b);
+  });
+  const teams = Object.keys(byTeam).sort();
+  let html = '';
+  teams.forEach(function (k) {
+    html += '<div class="teamhead">' + k + '</div>';
+    const rows = byTeam[k].map(function (b) {
+      return '<tr><td>' + b.bday + '</td><td>' + b.name + '</td><td>' + b.aff + '</td>' +
+        '<td>' + (b.phone ? b.phone : '<span class="nophone">-</span>') + '</td></tr>';
+    }).join('');
+    html += '<table class="abs"><tr><th>생일</th><th>이름</th><th>소속</th><th>휴대폰</th></tr>' + rows + '</table>';
+  });
+  document.getElementById('bday-wrap').innerHTML = html;
+})();
+</script>
+</body>
+</html>
