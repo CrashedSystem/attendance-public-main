@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>군종 출석체크 키오스크 사용 설명서</title>
+<style>
+  :root{
+    --brand:#27408b;
+    --brand2:#3a5ab5;
+    --ink:#222;
+    --muted:#666;
+    --line:#e2e8f0;
+    --bg:#f6f8fc;
+    --card:#fff;
+    --warn:#b45309;
+    --warnbg:#fef3c7;
+    --tip:#046c4e;
+    --tipbg:#e7f5ef;
+    --code:#1e293b;
+    --codebg:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    line-height:1.7;font-size:15px;
+  }
+  header{
+    background:linear-gradient(135deg,var(--brand),var(--brand2));
+    color:#fff;padding:44px 24px 40px;text-align:center;
+  }
+  header h1{margin:0 0 6px;font-size:26px;letter-spacing:-.5px}
+  header p{margin:0;opacity:.9;font-size:14px}
+  .wrap{max-width:880px;margin:0 auto;padding:28px 20px 80px}
+  nav.toc{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px 22px;margin:26px 0 34px;box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  nav.toc h2{margin:0 0 10px;font-size:16px;color:var(--brand)}
+  nav.toc ol{margin:0;padding-left:20px}
+  nav.toc li{margin:4px 0}
+  nav.toc a{color:var(--brand);text-decoration:none}
+  nav.toc a:hover{text-decoration:underline}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:26px 28px;margin:0 0 26px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  h2.sec{margin:-26px -28px 20px;padding:16px 28px;background:#eef2fb;border-bottom:1px solid var(--line);
+    font-size:19px;color:var(--brand);border-radius:12px 12px 0 0}
+  h3{margin:24px 0 8px;font-size:16px;color:var(--brand2);border-left:4px solid var(--brand);padding-left:10px}
+  h4{margin:18px 0 6px;font-size:14.5px;color:var(--ink)}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0;padding-left:22px}
+  li{margin:4px 0}
+  ul.tight li{margin:2px 0}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#eef2fb;color:var(--brand)}
+  tr:nth-child(even) td{background:#fafbfe}
+  code,.key{
+    background:var(--codebg);border:1px solid #e2e8f0;border-radius:5px;
+    padding:1px 6px;font-size:13px;color:var(--code);
+    font-family:Consolas,Menlo,monospace;
+  }
+  .key{display:inline-block;min-width:26px;text-align:center;padding:2px 8px}
+  pre{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px 16px;overflow:auto;font-size:13px;font-family:Consolas,Menlo,monospace}
+  .note{border-left:4px solid var(--brand);background:#eef2fb;padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .warn{border-left:4px solid var(--warn);background:var(--warnbg);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .tip{border-left:4px solid var(--tip);background:var(--tipbg);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .warn b{color:var(--warn)}
+  .tip b{color:var(--tip)}
+  .badge{display:inline-block;background:var(--brand);color:#fff;border-radius:20px;padding:0 10px;font-size:12px;line-height:20px;vertical-align:middle}
+  .badge.green{background:var(--tip)}
+  .badge.red{background:#b91c1c}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+  .flow .step{background:#eef2fb;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px}
+  .flow .arr{color:var(--muted)}
+  footer{margin-top:40px;text-align:center;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:18px}
+  @media print{
+    body{background:#fff}
+    section,header,.toc{box-shadow:none;border-color:#ccc}
+    header{background:var(--brand)}
+    a{color:inherit;text-decoration:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>군종 출석체크 키오스크 사용 설명서</h1>
+  <p>일요일 · 수요일 예배 출석 관리 및 보고서 생성 시스템</p>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#overview">개요 및 시스템 구성</a></li>
+    <li><a href="#setup">설치 및 실행</a></li>
+    <li><a href="#kiosk">예배 참석자 출석 (체크인)</a></li>
+    <li><a href="#adminlogin">관리자 로그인 (PIN)</a></li>
+    <li><a href="#mode">예배 모드 전환 (일요일 / 수요일)</a></li>
+    <li><a href="#roster">명단(인원) 관리</a></li>
+    <li><a href="#attend">출석 현황 조회</a></li>
+    <li><a href="#bulk">일괄 출석</a></li>
+    <li><a href="#teams">팀 · 소속 관리</a></li>
+    <li><a href="#absence">수요 결석 관리</a></li>
+    <li><a href="#history">기록 · 통계 · 시간 관리</a></li>
+    <li><a href="#report">보고서 및 출력물</a></li>
+    <li><a href="#data">데이터 저장 위치</a></li>
+    <li><a href="#security">보안 (관리자 PIN)</a></li>
+    <li><a href="#trouble">자주 묻는 문제와 주의사항</a></li>
+  </ol>
+</nav>
+
+<!-- 1. 개요 -->
+<section id="overview">
+  <h2 class="sec">1. 개요 및 시스템 구성</h2>
+  <p>이 프로그램은 <b>군종(군종병) 신우들의 예배 출석을 관리</b>하기 위한 터치(키오스크) 방식의 웹 프로그램입니다. 참석자가 이름을 입력하면 즉시 출석 처리되고, 관리자는 명단·팀·결석·보고서 등을 한 화면에서 관리할 수 있습니다.</p>
+  <h3>주요 기능</h3>
+  <ul>
+    <li><b>예배 출석(체크인)</b> : 이름 입력 → 본인 확인 → 출석 처리</li>
+    <li><b>일요일 / 수요일 모드</b> : 서로 다른 예배(모드)별로 출석 기록 분리 관리</li>
+    <li><b>명단(인원) 관리</b> : 신우 등록·수정·삭제, 검색·필터·정렬</li>
+    <li><b>팀 · 소속 관리</b> : 소속 단위 일괄 이동, 이름 변경, 팀 생성·삭제</li>
+    <li><b>일괄 출석</b> : 이름 목록 한 번에 출석 처리 (동명이인 직접 선택)</li>
+    <li><b>결석 관리</b> : 수요 예배 결석자 사유 등록·조회</li>
+    <li><b>보고서 생성</b> : 종합·A4·팀별 보고서, 서버 종료 시 자동 저장</li>
+    <li><b>시간 동기화</b> : 시스템 시간 확인 및 인터넷(NTP) 시간 갱신</li>
+  </ul>
+  <h3>기술 구성</h3>
+  <table>
+    <tr><th>항목</th><th>내용</th></tr>
+    <tr><td>서버</td><td>Flask (Python) — <code>127.0.0.1:5000</code> 에서 동작</td></tr>
+    <tr><td>데이터베이스</td><td>SQLite (단일 파일, 별도 설치 불필요)</td></tr>
+    <tr><td>화면</td><td>브라우저(키오스크 모드) — Chrome / Edge 전체 화면</td></tr>
+    <tr><td>보고서</td><td>독립 HTML 파일 + 팀별 PNG 이미지 생성 가능</td></tr>
+  </table>
+</section>
+
+<!-- 2. 설치 및 실행 -->
+<section id="setup">
+  <h2 class="sec">2. 설치 및 실행</h2>
+  <h3>2-1. 필요 환경</h3>
+  <ul>
+    <li>Windows PC, <b>Python 3</b> 설치 필요</li>
+    <li>브라우저 : 구글 Chrome 또는 Microsoft Edge (키오스크 모드 사용)</li>
+    <li>인터넷 시간 동기화를 위해 네트워크 필요(선택)</li>
+  </ul>
+  <h3>2-2. 의존 패키지 설치 (최초 1회)</h3>
+  <p>프로그램 폴더에서 명령 프롬프트를 열고 아래를 실행합니다.</p>
+  <pre>pip install -r requirements.txt</pre>
+  <p>내용물은 Flask 하나뿐이며, 이미 설치되어 있다면 생략해도 됩니다.</p>
+  <h3>2-3. 실행</h3>
+  <p>프로그램 폴더에서 다음 배치 파일 중 하나를 더블클릭합니다.</p>
+  <table>
+    <tr><th>파일</th><th>용도</th></tr>
+    <tr><td><code>start_kiosk.bat</code></td><td>정상(운영) 모드로 실행 — 서버 시작 후 Chrome/Edge를 전체 화면 키오스크로 엽니다.</td></tr>
+    <tr><td><code>start_kiosk_dev.bat</code></td><td>개발(테스트) 모드로 실행 — 화면에 “(개발자 모드)” 표시가 나타납니다.</td></tr>
+  </table>
+  <div class="note"><b>수동 실행:</b> 명령 프롬프트에서 <code>python app.py</code> (운영) 또는 <code>python app.py dev</code> (개발)로도 실행하고, 브라우저에서 <code>http://localhost:5000</code> 을 엽니다.</div>
+  <div class="tip"><b>모드 구분:</b> 운영(<code>commercial</code>)과 개발(<code>dev</code>) 환경의 <b>출석 기록과 보고서가 별도로 저장</b>됩니다. 테스트 중 발생한 기록이 실제 예배 기록에 섞이지 않도록 하려면 테스트는 반드시 dev로 하세요.</div>
+</section>
+
+<!-- 3. 출석 -->
+<section id="kiosk">
+  <h2 class="sec">3. 예배 참석자 출석 (체크인)</h2>
+  <p>출석 화면은 참석자가 직접 사용하는 화면입니다. <b>관리자 인증(PIN) 없이</b> 사용할 수 있습니다.</p>
+  <h3>출석 절차</h3>
+  <div class="flow">
+    <span class="step">1. 상단에 예배 모드(일요일/수요일) 확인</span><span class="arr">→</span>
+    <span class="step">2. 이름 입력</span><span class="arr">→</span>
+    <span class="step">3. 본인 맞는지 확인</span><span class="arr">→</span>
+    <span class="step">4. 출석 완료 메시지</span>
+  </div>
+  <h4>단계별 동작</h4>
+  <ul>
+    <li><b>이름 입력</b> : 입력란에 이름을 입력하면 동명이인 등 후보가 자동 추천됩니다. 추천 목록에서 선택하면 정확히 지정됩니다.</li>
+    <li><b>본인 확인</b> : “본인이 맞으십니까?” 화면에서 <span class="key">맞습니다</span> / <span class="key">아니요</span> 선택.</li>
+    <li><b>완료</b> : 출석이 저장되고 완료 메시지가 표시됩니다.</li>
+  </ul>
+  <div class="warn"><b>중복 출석:</b> 같은 예배(모드)에 이미 출석한 경우 <b>“이미 출석하셨습니다”</b> 안내와 함께 중복 처리되지 않습니다.</div>
+  <div class="note"><b>명단에 없는 이름:</b> 명단에 없는 이름은 출석 처리되지 않습니다. 먼저 관리자 화면의 <a href="#roster">명단 관리</a>에서 등록해 주세요.</div>
+</section>
+
+<!-- 4. 관리자 로그인 -->
+<section id="adminlogin">
+  <h2 class="sec">4. 관리자 로그인 (PIN)</h2>
+  <p>메인 화면에서 <b>관리자</b> 영역을 누르면 숫자 키패드로 로그인하는 <b>관리자 인증</b> 화면이 열립니다.</p>
+  <h3>로그인 방법</h3>
+  <ol>
+    <li>기본 관리자 PIN <code>1717</code> 을 키패드로 입력</li>
+    <li><span class="key">확인</span> 누르기 → 관리자 홈으로 진입</li>
+  </ol>
+  <div class="warn"><b>PIN은 설정 파일에서 변경 가능:</b> 프로그램 폴더의 <code>config.py</code> 에 <code>ADMIN_PIN = '1717'</code> 값이 있습니다. 보안을 위해 운영 시 반드시 다른 값으로 바꾸고, 수정 후에는 서버를 다시 실행하세요.</div>
+  <div class="warn"><b>보안 동작 방식:</b> 예배 출석(체크인)은 PIN 없이 누구나 가능하지만, <b>모든 관리 기능(명단·팀·결석·보고서·시간 등)은 로그인 후에만</b> 사용할 수 있습니다. 관리자 로그인 상태에서는 각 요청에 PIN이 자동으로 포함되어 전송됩니다. 따라서 관리자 기능 URL을 주소창에 직접 입력해 접근해도 PIN 없이는 <b>“관리자 인증이 필요합니다”</b> 메시지와 함께 차단됩니다.</div>
+</section>
+
+<!-- 5. 예배 모드 -->
+<section id="mode">
+  <h2 class="sec">5. 예배 모드 전환 (일요일 / 수요일)</h2>
+  <p>관리자 홈 상단의 <b>“현재 모드”</b>에서 예배 모드를 선택합니다.</p>
+  <ul>
+    <li><b>일요일</b> : 일요일 예배용 (해당 주의 일요일 날짜 기준)</li>
+    <li><b>수요일</b> : 수요일 예배용 (해당 주의 수요일 날짜 기준)</li>
+  </ul>
+  <p>모드를 바꾸면 메인 화면 상단의 표시(배지)도 함께 바뀌고, 이후 출석은 해당 모드로 기록됩니다. 모드 전환 시 안내 문구가 표시됩니다.</p>
+  <div class="tip"><b>모드별 기준일:</b> 일요일 모드는 일요일 날짜, 수요일 모드는 수요일 날짜를 기준으로 출석·보고서를 계산합니다. “이 날짜 보고서” 기능 등에서도 같은 기준이 적용됩니다.</div>
+</section>
+
+<!-- 6. 명단 관리 -->
+<section id="roster">
+  <h2 class="sec">6. 명단(인원) 관리</h2>
+  <p><b>명단 관리</b> 탭에서 모든 신우를 등록·조회·수정·삭제할 수 있습니다.</p>
+  <h3>신규 등록</h3>
+  <p><span class="key">신규 등록</span> 버튼 → 아래 입력 항목을 채우고 <span class="key">저장</span>합니다.</p>
+  <table>
+    <tr><th>항목</th><th>설명</th></tr>
+    <tr><td>이름</td><td>필수. 출석 시 입력하는 이름과 동일하게 등록</td></tr>
+    <tr><td>세례(영세)</td><td>O (세례) / X (미세례)</td></tr>
+    <tr><td>소속</td><td>드롭다운에서 선택</td></tr>
+    <tr><td>팀</td><td>드롭다운에서 선택</td></tr>
+    <tr><td>기존 출석 교회</td><td>이전에 다니던 교회</td></tr>
+    <tr><td>연락처</td><td>전화번호</td></tr>
+    <tr><td>전역일자</td><td>전역 예정일</td></tr>
+    <tr><td>생일</td><td>MMDD 형식 (예: 0102) — 보고서의 생일자 목록에 사용</td></tr>
+    <tr><td>비고</td><td>메모 · 새신우 태그(자동 관리)</td></tr>
+    <tr><td>군종병 여부</td><td>체크 시 군종병으로 표시 (수요일 연속 미출석자 목록 등에 영향)</td></tr>
+  </table>
+  <h3>조회 · 검색 · 필터 · 정렬</h3>
+  <ul>
+    <li><b>검색</b> : 이름·소속·팀 키워드 입력</li>
+    <li><b>필터</b> : 소속 · 팀 · 세례(O/X/미기재) · 군종병(군종병/일반 신우)</li>
+    <li><b>정렬</b> : No 순 / 이름 ↑↓ / 생일 ↑↓ / 팀 ↑↓</li>
+  </ul>
+  <h3>수정 · 삭제</h3>
+  <ul>
+    <li>목록의 해당 행에서 <b>수정(편집)</b>을 눌러 정보를 변경·저장합니다.</li>
+    <li><b>삭제</b>를 누르면 확인 후 명단에서 제거됩니다.</li>
+    <li>전역 처리된 신우는 별도의 <b>아카이브(전역)</b> 목록으로 이동하며, 필요 시 복원할 수 있습니다.</li>
+  </ul>
+</section>
+
+<!-- 7. 출석 현황 -->
+<section id="attend">
+  <h2 class="sec">7. 출석 현황 조회</h2>
+  <p><b>출석 현황</b> 탭은 해당 예배(모드)의 출석 요약과 출석 명단을 보여줍니다.</p>
+  <ul>
+    <li>상단에 <b>요약(출석 인원 등)</b>이 표시됩니다.</li>
+    <li>아래 표에 <b>출석자 목록</b>(이름·소속·팀·출석 시간 등)이 표시됩니다.</li>
+  </ul>
+  <div class="note">출석 현황은 현재 선택된 예배 모드(일요일/수요일)의 출석을 기준으로 조회됩니다.</div>
+</section>
+
+<!-- 8. 일괄 출석 -->
+<section id="bulk">
+  <h2 class="sec">8. 일괄 출석</h2>
+  <p>여러 명을 한 번에 출석 처리할 때 사용합니다. 예배 시작 후 명단을 한꺼번에 체크할 때 유용합니다.</p>
+  <h3>사용 방법</h3>
+  <ol>
+    <li><b>일괄 출석</b> 탭 선택</li>
+    <li>이름을 <b>한 줄에 하나씩</b> 입력 (예: 여러 줄 붙여넣기)</li>
+    <li><span class="key">출석 처리</span> 클릭</li>
+  </ol>
+  <p>처리 규칙:</p>
+  <ul>
+    <li>이름이 <b>유일</b>하면 바로 출석 처리됩니다.</li>
+    <li><b>동명이인</b>이 있으면 직접 올바른 사람을 선택하게 안내합니다.</li>
+    <li>명단에 <b>없는 이름</b>이나 <b>이미 출석</b>한 이름은 결과에 구분하여 표시됩니다.</li>
+  </ul>
+</section>
+
+<!-- 9. 팀 관리 -->
+<section id="teams">
+  <h2 class="sec">9. 팀 · 소속 관리</h2>
+  <p><b>팀 관리</b> 탭에서 소속(파트)과 팀을 체계적으로 관리합니다.</p>
+  <table>
+    <tr><th>기능</th><th>설명</th></tr>
+    <tr><td>소속 일괄 이동</td><td>소속 → 선택한 팀으로 그 소속의 인원을 모두 이동</td></tr>
+    <tr><td>소속 이름 변경</td><td>소속 이름 변경 (임시 소속을 변경하면 빈 ‘임시’ 소속이 자동 생성)</td></tr>
+    <tr><td>임시 소속 추가</td><td>새 임시 소속 생성 (기본 이름: 임시)</td></tr>
+    <tr><td>팀 이름 변경</td><td>팀 이름 변경</td></tr>
+    <tr><td>새 팀 만들기</td><td>새 팀 생성</td></tr>
+    <tr><td>새신우 유지 기간</td><td>새신우로 분류되는 기간(일) 설정 · 저장</td></tr>
+    <tr><td>팀 삭제</td><td>선택한 팀 삭제 (안내 문구 확인)</td></tr>
+  </table>
+  <div class="tip"><b>새신우:</b> 비고란에 자동 기록되는 ‘새신우(등록일)’ 태그로 관리됩니다. 설정한 유지 기간(기본 30일)이 지나면 자동으로 일반 신우로 분류되고, 지난 태그는 자동 정리됩니다.</div>
+</section>
+
+<!-- 10. 결석 관리 -->
+<section id="absence">
+  <h2 class="sec">10. 수요 결석 관리</h2>
+  <p><b>수요 결석 관리</b> 탭에서 수요일 예배의 결석자와 결석 사유를 관리합니다.</p>
+  <ul>
+    <li><b>날짜 선택</b> : ‘지난 수요일’, ‘지지난 수요일’ 버튼 또는 날짜 직접 선택. 기본은 가장 최근 지나간 수요일입니다.</li>
+    <li>해당 수요일에 <b>출석하지 않은 신우 목록</b>이 표시됩니다.</li>
+    <li>각 결석자에게 <b>결석 사유</b>를 등록(수정)하거나 삭제할 수 있습니다.</li>
+  </ul>
+  <div class="note">결석은 해당 모드(수요일)의 출석 기록을 기준으로 “출석에 없는 사람”을 자동으로 집계합니다.</div>
+</section>
+
+<!-- 11. 기록·통계·시간 -->
+<section id="history">
+  <h2 class="sec">11. 기록 · 통계 · 시간 관리</h2>
+  <p><b>기록·통계·시간</b> 탭은 과거 기록 조회, 출석 추가, 시간 관리 기능을 제공합니다.</p>
+  <h3>날짜별 기록 조회</h3>
+  <ul>
+    <li><b>조회/출석 날짜</b> 선택 후 <span class="key">출석 기록 보기</span> → 해당 날짜의 출석 명단 표시</li>
+    <li><span class="key">이 날짜 보고서</span> → 해당 날짜 기준 보고서 생성(새 창)</li>
+  </ul>
+  <h3>임의 출석 추가</h3>
+  <ul>
+    <li>특정 <b>날짜 · 시각</b>에 특정 신우의 출석을 관리자가 추가 기록합니다.</li>
+    <li>직접 추가한 출석 기록은 목록에서 삭제할 수 있습니다.</li>
+  </ul>
+  <h3>시간 복구 (동기화)</h3>
+  <ul>
+    <li><span class="key">시간 확인</span> : 현재 시스템(로컬) 시간과 인터넷(NTP) 시간을 표시(읽기 전용).</li>
+    <li><span class="key">인터넷 시간으로 동기화</span> : NTP 서버에서 받아온 정확한 시간으로 시스템 시간을 맞춥니다.</li>
+  </ul>
+  <div class="warn"><b>시간 동기화 권한:</b> 시스템 시간 변경은 관리자 권한이 필요할 수 있습니다. 안내가 뜨면 확인해 주세요. 네트워크가 없을 때는 동기화가 실패할 수 있습니다.</div>
+</section>
+
+<!-- 12. 보고서 -->
+<section id="report">
+  <h2 class="sec">12. 보고서 및 출력물</h2>
+  <p>관리자 홈 상단 버튼으로 보고서를 생성·열람하고, 필요한 형태로 출력하거나 저장할 수 있습니다.</p>
+  <table>
+    <tr><th>버튼</th><th>동작</th></tr>
+    <tr><td>보고서 보기</td><td>종합 보고서를 새 창(HTML)으로 엽니다.</td></tr>
+    <tr><td>보고서 보기 (A4)</td><td>A4 인쇄용으로 정리된 보고서를 새 창으로 엽니다.</td></tr>
+    <tr><td>팀별 보고서 내보내기</td><td>팀 단위 보고서 파일들을 생성·내보냅니다.</td></tr>
+    <tr><td>보고서 저장 + 서버 종료</td><td>현재 보고서를 저장한 뒤 서버를 종료합니다.</td></tr>
+  </table>
+  <h3>종합 보고서의 주요 항목</h3>
+  <ul>
+    <li>예배 정보(모드 · 날짜) 및 총 출석 건수</li>
+    <li>팀별 출석 인원 (이번 주) 및 팀 출석자 상세 명단</li>
+    <li>연속 미출석자 명단 (1~4주) <span class="badge">수요일</span></li>
+    <li>이달의 생일자 · 새신우 현황 <span class="badge">일요일</span></li>
+    <li>결석 사유 반영 (수요일 모드)</li>
+  </ul>
+  <h3>HTML 보고서 파일 저장 위치</h3>
+  <ul>
+    <li>메인 보고서 : 프로그램 폴더의 <code>군종_그룹관리_commercial.html</code> / <code>..._dev.html</code></li>
+    <li>날짜별 보관 : <code>data\보고_commercial\</code> 폴더에 날짜별·팀별 파일로 보관</li>
+    <li>PNG 이미지 : 메인 + 팀별 보고서를 PNG로도 생성 가능</li>
+  </ul>
+  <div class="tip"><b>인쇄:</b> 보고서는 HTML로 열리므로 브라우저의 인쇄(Ctrl+P)로 바로 출력하거나 PDF로 저장할 수 있습니다. A4 버전은 A4 용지에 맞게 정리되어 있습니다.</div>
+</section>
+
+<!-- 13. 데이터 저장 -->
+<section id="data">
+  <h2 class="sec">13. 데이터 저장 위치</h2>
+  <table>
+    <tr><th>항목</th><th>위치</th></tr>
+    <tr><td>주요 데이터(명단·출석·결석 등)</td><td>프로그램 폴더의 SQLite DB 파일 (<code>군종.db</code>, <code>군종.db.bak_…</code>)</td></tr>
+    <tr><td>날짜별·팀별 보고서 보관</td><td><code>data\보고_…\</code></td></tr>
+    <tr><td>메인 보고서 HTML</td><td><code>군종_그룹관리_….html</code></td></tr>
+    <tr><td>보고서 템플릿</td><td><code>report_template.html</code></td></tr>
+  </table>
+  <div class="warn"><b>백업 권장:</b> 데이터베이스는 단일 파일이므로, 정기적으로 <code>군종.db</code> 파일을 별도 저장소로 복사해 두면 안전하게 백업할 수 있습니다.</div>
+</section>
+
+<!-- 14. 보안 -->
+<section id="security">
+  <h2 class="sec">14. 보안 (관리자 PIN)</h2>
+  <ul>
+    <li>예배 출석(체크인)은 PIN 없이 누구나 사용할 수 있습니다.</li>
+    <li><b>모든 관리 기능은 PIN 인증을 요구</b>하며, 요청 헤더(<code>X-Admin-Pin</code>)로 검증됩니다.</li>
+    <li>PIN이 없거나 틀리면 <b>“관리자 인증이 필요합니다.”</b> 응답(401)으로 차단됩니다.</li>
+    <li>로그인 상태에서만 관리 기능을 수행할 수 있으며, PIN은 구성 파일(<code>config.py</code>의 <code>ADMIN_PIN</code>)에서 관리합니다.</li>
+  </ul>
+  <div class="warn"><b>운영 시 반드시:</b> 기본 PIN <code>1717</code>을 운영 환경에 맞는 값으로 변경하고 서버를 재시작하세요.</div>
+</section>
+
+<!-- 15. 문제 해결 -->
+<section id="trouble">
+  <h2 class="sec">15. 자주 묻는 문제와 주의사항</h2>
+  <h4>Q. “관리자 인증이 필요합니다.” 메시지가 나옵니다.</h4>
+  <p>관리자 기능 URL을 주소창에 직접 입력해 접근했기 때문입니다. 관리자 기능은 PIN 없이 접근할 수 없습니다. 반드시 메인 화면의 <b>관리자</b> 영역 → PIN 로그인 후 사용하세요.</p>
+  <h4>Q. 이름을 입력했는데 출석이 되지 않습니다.</h4>
+  <ul>
+    <li>명단에 해당 이름이 등록되어 있는지 확인하세요(명단 관리에서 등록).</li>
+    <li>동명이인이 있으면 추천 목록에서 본인을 정확히 선택하세요.</li>
+    <li>이미 같은 예배에 출석한 경우 중복으로 처리되지 않습니다.</li>
+  </ul>
+  <h4>Q. 화면이 예배 모드와 다릅니다.</h4>
+  <p>관리자 로그인 → <b>현재 모드</b>에서 일요일/수요일을 올바르게 선택하세요.</p>
+  <h4>Q. 시간이 맞지 않습니다.</h4>
+  <p>관리자 로그인 → <b>기록·통계·시간</b> 탭에서 <b>인터넷 시간으로 동기화</b>를 실행하세요 (관리자 권한·네트워크 필요).</p>
+  <h4>Q. 보고서가 예전 날짜로 보입니다.</h4>
+  <p>보고서는 선택한 날짜(또는 현재 모드의 기준일) 기준으로 생성됩니다. <b>기록·통계·시간</b> 탭의 <b>이 날짜 보고서</b>를 확인하세요.</p>
+  <h4>Q. 테스트 기록이 실제로 보입니다.</h4>
+  <p>운영(<code>commercial</code>)과 개발(<code>dev</code>) 기록은 분리됩니다. 테스트는 <code>start_kiosk_dev.bat</code>(dev)로 실행하세요.</p>
+  <h4>주의사항</h4>
+  <ul>
+    <li>서버 종료는 관리자 화면의 <b>보고서 저장 + 서버 종료</b>를 사용하면 보고서를 남기고 종료됩니다.</li>
+    <li>키오스크 전체 화면 종료: <span class="key">Ctrl</span>+<span class="key">Shift</span>+<span class="key">I</span> 또는 <span class="key">Alt</span>+<span class="key">F4</span> 등으로 종료할 수 있습니다.</li>
+    <li>브라우저를 새로 고침(Ctrl+F5)하면 최신 화면(스크립트)이 반영됩니다.</li>
+  </ul>
+</section>
+
+<footer>
+  군종 출석체크 키오스크 시스템 · 본 문서는 독립된 HTML 형식의 사용 설명서입니다.
+</footer>
+
+</div>
+</body>
+</html>
