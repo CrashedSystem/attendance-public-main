@@ -30,6 +30,7 @@
     // 컴포넌트
     window.tabsManager.init();
     window.reportManager.init();
+    window.adminMenuManager.init();
 
     // 커스텀 date -> 달력 변환 (동적 요소 감지 포함)
     window.picker.init();

@@ -15,7 +15,12 @@
     if (!el) return;
     el.classList.add('active');
     document.querySelectorAll('.tab').forEach(function (x) {
-      if (x.dataset.tab === tab) x.classList.add('active');
+      if (x.dataset.tab === tab) {
+        x.classList.add('active');
+        x.setAttribute('aria-selected', 'true');
+      } else {
+        x.setAttribute('aria-selected', 'false');
+      }
     });
 
     if (tab === 'roster') window.rosterManager.load();

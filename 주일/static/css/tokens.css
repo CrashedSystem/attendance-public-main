@@ -1,0 +1,224 @@
+/* ================================================================
+   DESIGN TOKENS — 키오스크 · 관리자 공통
+   ================================================================
+   프로젝트 전역의 유일한 디자인 소스.
+   컴포넌트 레이어(kiosk.css)는 이 파일의 토큰만 참조하고
+   임의의 색 · 반경 · 그림자 · 간격 · 폰트 값을 하드코딩하지 않는다.
+
+   원칙
+   1. 색은 절제. #007AFF(accent)는 "지금 가장 먼저 해야 하는 행동"과
+      선택/활성 상태에만 사용한다.
+   2. 그림자를 최소화. 버튼은 무(無)그림자, 표면은 border 또는 미세 그림자,
+      모달만 부드러운 그림자.
+   3. 반경은 3단계(control 10 / card 14 / modal 20)로 제한.
+      pill(999px)은 상태 배지 등 정말 필요한 곳에만.
+   4. 콘텐츠 간격은 8·12·16·24·32·48·64 배수만 사용.
+
+   아래 영문 토큰(--text-1, --line-1, --space-* 등)이 표준이고,
+   문서 끝의 "LEGACY ALIAS"는 마이그레이션 전 컴포넌트가 참조하도록
+   유지한 이전 이름이다. 신규 코드는 반드시 표준 이름을 쓴다.
+   ================================================================ */
+
+:root {
+  /* ============================================================
+     Color — 기본 팔레트
+     ============================================================ */
+  --bg: #F5F5F7;            /* 앱 배경 */
+  --surface: #FFFFFF;       /* 표면 위 표면 (카드·시트·입력) */
+  --raised: #F2F2F7;        /* 살짝 띄운 표면 (표 머리글 등) */
+
+  --text-1: #1D1D1F;        /* primary text */
+  --text-2: #6E6E73;        /* secondary text */
+  --text-3: #98989F;        /* tertiary / hint */
+
+  --line-1: #D2D2D7;        /* separator */
+  --line-2: #E8E8ED;        /* hairline separator */
+
+  --fill-1: #E9E9EB;        /* chip · soft control fill */
+  --fill-2: #F2F2F7;        /* 입력 필드 기본 채움 */
+
+  /* accent — 핵심 행동 + 선택/활성 상태 전용 */
+  --accent: #007AFF;
+  --accent-hover: #0066E6;
+  --accent-soft: rgba(0, 122, 255, .12);
+
+  --danger: #FF3B30;
+  --danger-soft: rgba(255, 59, 48, .12);
+
+  /* 성공 — 모노크롬으로 절제 (인쇄/키오스크 일관성) */
+  --success: #1D1D1F;
+  --success-fg: #FFFFFF;
+
+  /* 불투명 오버레이 */
+  --scrim: rgba(245, 245, 247, .78);   /* 관리자 레이어 아래 */
+  --scrim-strong: rgba(0, 0, 0, .45);  /* 확인/결과 딤(dim) */
+
+  /* 아크릴(유리) 표면 — 키오스크 전용 */
+  --acrylic: rgba(252, 252, 254, .88);
+  --acrylic-edge: rgba(255, 255, 255, .7);
+
+  /* ============================================================
+     Radius — 3단계 제한 (pill은 상태 배지 등 극히 제한)
+     ============================================================ */
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-modal: 20px;
+  --radius-full: 999px;
+
+  /* ============================================================
+     Shadow — 최소화
+     버튼: none / 표면: border 우선 · 미세 그림자 / 모달: 부드러운 그림자
+     ============================================================ */
+  --shadow-none: none;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .05);                          /* 표면 구분 */
+  --shadow-2: 0 1px 3px rgba(0, 0, 0, .06), 0 2px 8px rgba(0, 0, 0, .05); /* 카드 */
+  --shadow-3: 0 16px 40px rgba(0, 0, 0, .16), 0 2px 8px rgba(0, 0, 0, .06); /* 모달 */
+  --ring: 0 0 0 4px rgba(0, 0, 0, .08);                              /* 입력 포커스 글로우 */
+
+  /* ============================================================
+     Spacing — 8 · 12 · 16 · 24 · 32 · 48 · 64
+     ============================================================ */
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
+
+  /* ============================================================
+     Typography — 한국어 UI는 Pretendard 단일 시스템
+     Page title 32~40/700 · Section 22~24/600 · Body 16~18/400
+     Button 15~16/600 · Caption 13~14/400
+     ============================================================ */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+               'Noto Sans KR', 'Malgun Gothic', sans-serif;
+
+  --fs-page: 34px;          /* Page title (키오스크는 vh clamp로 확대) */
+  --fs-section: 24px;       /* Section title */
+  --fs-title: 22px;         /* 모바일 section */
+  --fs-body: 16px;          /* Body */
+  --fs-body-lg: 18px;       /* Body lead */
+  --fs-btn: 15px;           /* Button */
+  --fs-btn-lg: 16px;        /* 큰 버튼 */
+  --fs-caption: 13px;       /* Caption */
+  --fs-caption-lg: 14px;    /* Caption (헬퍼) */
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --lh-tight: 1.2;
+  --lh-snug: 1.4;
+  --lh-normal: 1.55;
+
+  --tracking-tight: -0.03em;   /* 제목 */
+  --tracking-wide: 0.01em;     /* 부제 · 캡션 */
+
+  /* ============================================================
+     Motion — 단일 반응 물성
+     ============================================================ */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);      /* 표준 출입 */
+  --ease-spring: cubic-bezier(.25, 1, .5, 1);   /* 반발 스프링 */
+  --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+
+  --dur-fast: 120ms;
+  --dur-std: 220ms;
+  --dur-slow: 360ms;
+
+  /* 아크릴 굴절 필터 (배경 블러) */
+  --material: blur(32px) saturate(210%) brightness(1.05);
+  /* 아크릴 상단 하이라이트 */
+  --edge-top: linear-gradient(to bottom, rgba(255, 255, 255, .25), rgba(255, 255, 255, .02));
+}
+
+/* ================================================================
+   Dark theme — 토큰만 테마별로 재결의
+   (accent #007AFF는 양 테마 고정, 주변 색만 어둡게)
+   ================================================================ */
+html[data-theme='dark'] {
+  --bg: #0B0B0D;
+  --surface: #1C1C1E;
+  --raised: #242426;
+
+  --text-1: #FFFFFF;
+  --text-2: rgba(235, 235, 245, .62);
+  --text-3: rgba(235, 235, 245, .35);
+
+  --line-1: #38383A;
+  --line-2: #2C2C2E;
+
+  --fill-1: #2C2C2E;
+  --fill-2: #242426;
+
+  --accent: #0A84FF;
+  --accent-hover: #0A84FF;
+  --accent-soft: rgba(10, 132, 255, .18);
+
+  --danger: #FF453A;
+  --danger-soft: rgba(255, 69, 58, .18);
+
+  --success: #FFFFFF;
+  --success-fg: #0B0B0D;
+
+  --scrim: rgba(0, 0, 0, .82);
+  --scrim-strong: rgba(0, 0, 0, .6);
+
+  --acrylic: rgba(40, 40, 44, .92);
+  --acrylic-edge: rgba(255, 255, 255, .18);
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .5);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .3);
+  --shadow-3: 0 16px 40px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .3);
+  --ring: 0 0 0 4px rgba(255, 255, 255, .16);
+
+  --edge-top: linear-gradient(to bottom, rgba(255, 255, 255, .10), rgba(255, 255, 255, .01));
+}
+
+/* ================================================================
+   LEGACY ALIAS — 이전 컴포넌트용 바로가기 (마이그레이션 완료 시 제거)
+   신규 코드는 여기 위 표준 토큰을 직접 쓰지 못하는 경우가 없다.
+   ================================================================ */
+:root,
+html[data-theme='dark'] {
+  --label: var(--text-1);
+  --label-2: var(--text-2);
+  --label-3: var(--text-3);
+  --separator: var(--line-1);
+  --separator-2: var(--line-2);
+  --fill: var(--fill-1);
+
+  --blue: var(--accent);
+  --blue-hover: var(--accent-hover);
+  --blue-tint: var(--accent-soft);
+  --accent-fg: #FFFFFF;
+  --accent-tint: var(--accent-soft);
+
+  --red: var(--danger);
+  --red-tint: var(--danger-soft);
+  --ok: var(--success);
+  --ok-fg: var(--success-fg);
+  --gray: var(--text-3);
+
+  /* 중립 강조 — 장식/비활성 상태용 (accent 남용 방지) */
+  --emphasis: var(--text-1);
+  --emphasis-fg: #FFFFFF;
+  --emphasis-soft: rgba(0, 0, 0, .08);
+
+  --shadow-surface: var(--shadow-1);
+  --shadow-raised: var(--shadow-2);
+  --shadow-pop: var(--shadow-3);
+
+  --radius-field: var(--radius-control);
+
+  --spring: var(--ease-spring);
+  --press: var(--ease-spring);
+  --dur-spring: .35s;
+}
+
+html[data-theme='dark'] {
+  --emphasis: var(--text-1);
+  --emphasis-fg: #0B0B0D;
+  --emphasis-soft: rgba(255, 255, 255, .14);
+}

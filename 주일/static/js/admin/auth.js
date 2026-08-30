@@ -6,14 +6,23 @@
 
   var pinValue = '';
   var adminPin = '';
+  var MAX_PIN = 4; // 기본 PIN(4자리)에 맞춘 최대 입력 길이
+  var pinDots = [];
   var KP = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '지우기', '0', '확인'];
 
-  /** PIN 키패드 DOM 생성. */
+  /** PIN dot 인디케이터 DOM 캐시. */
+  function cacheDots() {
+    var dots = window.$('pin-dots');
+    pinDots = dots ? Array.prototype.slice.call(dots.querySelectorAll('.pin-dot')) : [];
+  }
+
+  /** PIN 키패드 DOM 생성 (버튼 계열로 강조 구분). */
   function buildPinKeypad() {
     var kp = window.$('pin-keypad');
     KP.forEach(function (k) {
-      var key = document.createElement('div');
-      key.className = 'kp-key';
+      var key = document.createElement('button');
+      key.type = 'button';
+      key.className = 'kp-key' + (k === '확인' ? ' kp-confirm' : k === '지우기' ? ' kp-backspace' : ' kp-num');
       key.textContent = k;
       key.addEventListener('click', function () { onPinKey(k); });
       kp.appendChild(key);
@@ -32,6 +41,7 @@
           if (res.ok) {
             adminPin = pinValue;
             pinValue = '';
+            refreshPin();
             openAdmin();
           }
           else { window.$('pin-error').textContent = res.msg || 'PIN 오류'; pinValue = ''; refreshPin(); }
@@ -39,13 +49,16 @@
       return;
     }
     if (k === '지우기') pinValue = pinValue.slice(0, -1);
-    else pinValue += k;
+    else if (pinValue.length < MAX_PIN) pinValue += k;
     refreshPin();
   }
 
-  /** PIN 표시 갱신 (••••• 형태). */
+  /** PIN dot 인디케이터 갱신. */
   function refreshPin() {
-    window.$('pin-display').innerHTML = pinValue ? pinValue.replace(/./g, '•') : '&nbsp;';
+    if (!pinDots.length) cacheDots();
+    pinDots.forEach(function (d, i) {
+      d.classList.toggle('filled', i < pinValue.length);
+    });
   }
 
   /** 관리자 화면 오픈 — 각 탭 데이터 로드. */
@@ -61,11 +74,12 @@
    * 모듈 초기화 — admin-zone 클릭 + admin-back 클릭 + 키패드 생성 등록.
    */
   function init() {
+    cacheDots();
     buildPinKeypad();
     window.$('admin-zone').addEventListener('click', function () {
       pinValue = '';
-      window.$('pin-display').innerHTML = '&nbsp;';
       window.$('pin-error').textContent = '';
+      refreshPin();
       window.screenManager.show('screen-admin-login');
     });
     window.$('btn-admin-back').addEventListener('click', function () {

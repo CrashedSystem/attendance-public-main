@@ -1,0 +1,180 @@
+/* ================================================================
+   BASE / GLOBAL — 리셋 · 타입그래피 · 접근성 · 공용 그라운드
+   ================================================================
+   tokens.css의 토큰만 사용한다.
+   컴포넌트 별 스타일(kiosk.css)은 이 레이어의 기본값 위에 얹힌다.
+   ================================================================ */
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/static/fonts/Pretendard-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/static/fonts/Pretendard-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/static/fonts/Pretendard-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ================================================================
+   Reset
+   ================================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+  color: var(--text-1);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ================================================================
+   Typography — 토큰 기반 계층 (컴포넌트가 참조)
+   ================================================================ */
+h1, h2, h3, h4, h5, h6 {
+  font-family: inherit;
+  line-height: var(--lh-tight);
+  color: var(--text-1);
+  font-weight: var(--fw-semibold);
+}
+
+/* 페이지 제목 */
+.t-title {
+  font-size: var(--fs-page);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+/* 섹션 제목 */
+.t-section {
+  font-size: var(--fs-section);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+/* 본문 */
+.t-body { font-size: var(--fs-body); line-height: var(--lh-normal); }
+.t-body-lg { font-size: var(--fs-body-lg); line-height: var(--lh-normal); }
+/* 캡션/헬퍼 */
+.t-caption { font-size: var(--fs-caption); color: var(--text-2); line-height: var(--lh-snug); }
+
+/* ================================================================
+   Form & control 기본 — appearance 정규화
+   kiosk.css의 클래스가 채움/테두리를 결정한다.
+   ================================================================ */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-control);
+  color: var(--text-1);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-3);
+}
+
+select {
+  cursor: pointer;
+}
+
+:where(button, input, select, textarea):disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ================================================================
+   Accessibility — 키보드 포커스 · 선택 · 스크롤바
+   ================================================================ */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-1) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--line-1); border-radius: var(--radius-full); }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ================================================================
+   Accessibility — 모션 축소
+   ================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
