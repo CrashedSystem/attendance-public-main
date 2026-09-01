@@ -14,7 +14,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, '군종.db')
 
 # 관리자 인증용 PIN (키오스크 관리 화면 로그인)
-ADMIN_PIN = '1717'
+# 환경변수 ADMIN_PIN 또는 파일(.admin_pin)로 설정 가능. 기본 '1717'은 로컬 키오스크용.
+_admin_pin_file = os.path.join(BASE_DIR, '.admin_pin')
+if os.environ.get('ADMIN_PIN'):
+    ADMIN_PIN = os.environ['ADMIN_PIN']
+elif os.path.isfile(_admin_pin_file):
+    with open(_admin_pin_file, 'r', encoding='utf-8') as _f:
+        ADMIN_PIN = _f.read().strip() or '1717'
+else:
+    ADMIN_PIN = '1717'
 
 # 서버 실행 모드: 'commercial'(상업/운영) | 'dev'(개발/테스트)
 # 환경변수 SERVER_ENV 또는 실행인자(dev/commercial)로 결정, 기본 commercial

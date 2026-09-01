@@ -1,10 +1,13 @@
-import os
+﻿import os
 import re
 import json
 import math
 import glob
+import logging
 import datetime
-import sqlite3
+
+from models.database import db
+from models.settings import MODE_WEEKDAY, is_service_date as _is_service_date_model
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, '군종.db')
@@ -14,8 +17,9 @@ REPORT_ARCHIVE_DIR = os.path.join(BASE_DIR, 'data', '통계_%s')
 # 모드 전환 시 치환 마커가 소실되어 수요일 통계가 일부만 표시되는 버그 발생)
 TEMPLATE_PATH = os.path.join(BASE_DIR, 'report_template.html')
 
+logger = logging.getLogger(__name__)
+
 MODE_SHEETS = {'sunday': '일요일', 'wednesday': '수요일'}
-MODE_WEEKDAY = {'sunday': 6, 'wednesday': 2}
 
 
 def _report_path(env='commercial'):
@@ -26,10 +30,8 @@ def _archive_dir(env='commercial'):
     return REPORT_ARCHIVE_DIR % env
 
 
-def _db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+def _mode_weekday(mode):
+    return MODE_WEEKDAY.get(mode)
 
 
 def _mode_weekday(mode):
@@ -37,13 +39,7 @@ def _mode_weekday(mode):
 
 
 def _is_service_date(date_str, mode):
-    wd = _mode_weekday(mode)
-    if wd is None:
-        return True
-    try:
-        return datetime.date.fromisoformat(date_str).weekday() == wd
-    except ValueError:
-        return False
+    return _is_service_date_model(date_str, mode)
 
 
 def _load_users(conn, mode, team_filter=None):
@@ -63,9 +59,11 @@ SUNDAY_DETAIL_THRESHOLD = 30  # 일요일 전체 출석자 상세 명단 표시 
 def _sunday_detail_threshold():
     """일요일 통합 보고서에서 전체 출석자 상세 명단을 표시할 인원 기준.
     전체 출석자가 이 값 미만이면 상세 명단을 표시한다. 기본 30."""
-    conn = _db()
-    row = conn.execute("SELECT value FROM settings WHERE key='sunday_detail_threshold'").fetchone()
-    conn.close()
+    conn = db()
+    try:
+        row = conn.execute("SELECT value FROM settings WHERE key='sunday_detail_threshold'").fetchone()
+    finally:
+        conn.close()
     try:
         v = int(row['value']) if row else SUNDAY_DETAIL_THRESHOLD
     except Exception:
@@ -75,9 +73,11 @@ def _sunday_detail_threshold():
 
 def _newbie_days():
     """설정된 새신우 유지 기간(일). 없으면 기본값 30."""
-    conn = _db()
-    row = conn.execute("SELECT value FROM settings WHERE key='newbie_days'").fetchone()
-    conn.close()
+    conn = db()
+    try:
+        row = conn.execute("SELECT value FROM settings WHERE key='newbie_days'").fetchone()
+    finally:
+        conn.close()
     try:
         v = int(row['value']) if row and row['value'] else NEWBIE_DAYS
     except Exception:
@@ -101,23 +101,25 @@ def expire_newbie_notes():
     태그 외 다른 내용은 보존하고, 비고가 비게 되면 공백으로 만든다.
     """
     days = _newbie_days()
-    conn = _db()
-    rows = conn.execute("SELECT id, note FROM users WHERE note LIKE '%새신우%'").fetchall()
-    today = datetime.date.today()
-    limit = today - datetime.timedelta(days=days)
-    changed = 0
-    for r in rows:
-        note = r['note'] or ''
-        dates = re.findall(r'새신우\((\d{4}-\d{2}-\d{2})\)', note)
-        if not dates:
-            continue
-        if min(datetime.date.fromisoformat(d) for d in dates) <= limit:
-            new_note = re.sub(r'\s*새신우\(\d{4}-\d{2}-\d{2}\)', '', note).strip(' ,.;·/')
-            if new_note != note:
-                conn.execute('UPDATE users SET note=? WHERE id=?', (new_note, r['id']))
-                changed += 1
-    conn.commit()
-    conn.close()
+    conn = db()
+    try:
+        rows = conn.execute("SELECT id, note FROM users WHERE note LIKE '%새신우%'").fetchall()
+        today = datetime.date.today()
+        limit = today - datetime.timedelta(days=days)
+        changed = 0
+        for r in rows:
+            note = r['note'] or ''
+            dates = re.findall(r'새신우\((\d{4}-\d{2}-\d{2})\)', note)
+            if not dates:
+                continue
+            if min(datetime.date.fromisoformat(d) for d in dates) <= limit:
+                new_note = re.sub(r'\s*새신우\(\d{4}-\d{2}-\d{2}\)', '', note).strip(' ,.;·/')
+                if new_note != note:
+                    conn.execute('UPDATE users SET note=? WHERE id=?', (new_note, r['id']))
+                    changed += 1
+        conn.commit()
+    finally:
+        conn.close()
     return changed
 
 
@@ -216,11 +218,12 @@ def _build_stats(conn, users, mode, env='commercial', team_filter=None):
     return stats, date_map
 
 
-def _build_absent(conn, users, date_map, env='commercial', team_filter=None, mode=None):
+def _build_absent(conn, all_users, date_map, env='commercial', team_filter=None, mode=None):
     event_dates = sorted(date_map)
-    user_ids = [u['id'] for u in users]
+    user_ids = [u['id'] for u in all_users]
     if not user_ids:
         return [], {}
+    users = all_users
     if mode == 'wednesday':
         # 수요일 모드: 연속 미출석자 명단은 군종병만 표시
         users = [u for u in users if u.get('is_chaplain')]
@@ -442,13 +445,15 @@ def _build_detail_pages(date_str, mode, env='commercial'):
     """출석자 명단·연속 미출석자 명단을 별도 사본으로 분리 생성 (서비스일)."""
     if not _is_service_date(date_str, mode):
         return []
-    conn = _db()
-    users = _load_users(conn, mode)
-    stats, date_map = _build_stats(conn, users, mode, env)
-    last_date = stats['dates'][-1] if stats['dates'] else ''
-    absent_list, _ = _build_absent(conn, users, date_map, env, mode=mode)
-    attendees = _build_team_attendees(conn, mode, last_date, env)
-    conn.close()
+    conn = db()
+    try:
+        users = _load_users(conn, mode)
+        stats, date_map = _build_stats(conn, users, mode, env)
+        last_date = stats['dates'][-1] if stats['dates'] else ''
+        absent_list, _ = _build_absent(conn, users, date_map, env, mode=mode)
+        attendees = _build_team_attendees(conn, mode, last_date, env)
+    finally:
+        conn.close()
     stamp = date_str.replace('-', '')
     out_dir = os.path.join(_archive_dir(env), '명단')
     os.makedirs(out_dir, exist_ok=True)
@@ -471,7 +476,8 @@ def _build_detail_pages(date_str, mode, env='commercial'):
                         '출석자 명단 · 총 %d명' % len(attendees),
                         ths, '\n'.join(rows))
     path = os.path.join(out_dir, '출석자_명단_%s.html' % stamp)
-    open(path, 'w', encoding='utf-8').write(html)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(html)
     written.append(path)
 
     badges = {1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4'}
@@ -505,7 +511,8 @@ def _build_detail_pages(date_str, mode, env='commercial'):
                         '연속 미출석자 명단 (1~4주) · 총 %d명' % len(absent_list),
                         ths, '\n'.join(rows))
     path = os.path.join(out_dir, '미출석자_명단_%s.html' % stamp)
-    open(path, 'w', encoding='utf-8').write(html)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(html)
     written.append(path)
 
     return written
@@ -519,10 +526,12 @@ def _png_dir(env='commercial'):
 def _render_html_to_png(html_path, png_path):
     """주어진 HTML 파일을 A4(가로 794px) 고해상도 PNG로 렌더링. 실패 시 False 반환."""
     if not os.path.isfile(html_path):
+        logger.warning('PNG 렌더 대상 HTML 없음: %s', html_path)
         return False
     try:
         from playwright.sync_api import sync_playwright
     except Exception:
+        logger.exception('playwright 미설치, PNG 렌더 생략: %s', html_path)
         return False
     p = None
     b = None
@@ -548,6 +557,7 @@ def _render_html_to_png(html_path, png_path):
             page.screenshot(path=out_path, full_page=False)
         return True
     except Exception:
+        logger.exception('PNG 렌더 실패: %s', html_path)
         return False
     finally:
         try:
@@ -604,7 +614,7 @@ def _render_pngs_shared(html_png_pairs):
                     page.screenshot(path=out_path, full_page=False)
                 page.close()
             except Exception:
-                pass
+                logger.exception('PNG 렌더 실패(팀/명단): %s', html_path)
     finally:
         try:
             if b is not None:
@@ -624,16 +634,18 @@ def render_reports_to_png(mode=None, env='commercial', date_str=None):
     refresh_web_report()가 HTML을 생성한 뒤 호출하며, 메인 + 팀 보고서 PNG를
     data/통계_{env}_png 에 생성한다. (호출측에서 명시적으로 실행)
     """
-    conn = _db()
-    if mode not in MODE_SHEETS:
-        row = conn.execute("SELECT value FROM settings WHERE key='current_mode'").fetchone()
-        mode = row['value'] if row else 'sunday'
-    rows = conn.execute(
-        "SELECT check_date FROM attendance WHERE mode=? AND env=? ORDER BY check_date DESC LIMIT 1",
-        (mode, env)).fetchall()
-    teams_rows = conn.execute(
-        "SELECT DISTINCT team FROM users WHERE team IS NOT NULL AND team != '' ORDER BY team").fetchall()
-    conn.close()
+    conn = db()
+    try:
+        if mode not in MODE_SHEETS:
+            row = conn.execute("SELECT value FROM settings WHERE key='current_mode'").fetchone()
+            mode = row['value'] if row else 'sunday'
+        rows = conn.execute(
+            "SELECT check_date FROM attendance WHERE mode=? AND env=? ORDER BY check_date DESC LIMIT 1",
+            (mode, env)).fetchall()
+        teams_rows = conn.execute(
+            "SELECT DISTINCT team FROM users WHERE team IS NOT NULL AND team != '' ORDER BY team").fetchall()
+    finally:
+        conn.close()
     if not date_str:
         date_str = rows[0]['check_date'] if rows else datetime.date.today().isoformat()
     if not _is_service_date(date_str, mode):
@@ -667,16 +679,18 @@ def render_reports_to_png(mode=None, env='commercial', date_str=None):
 
 
 def _render_report_for_team(date_str, mode, env='commercial', team_filter=None, team_index=1):
-    conn = _db()
-    users = _load_users(conn, mode, team_filter=team_filter)
-    stats, date_map = _build_stats(conn, users, mode, env, team_filter=team_filter)
-    absent_list, absent_weeks = _build_absent(conn, users, date_map, env, team_filter=team_filter, mode=mode)
-    bday = _build_birthday(users, date_str)
-    last_date = stats['dates'][-1] if stats['dates'] else ''
-    teams = _build_teams(conn, mode, last_date, env, team_filter=team_filter)
-    team_attendees = _build_team_attendees(conn, mode, last_date, env, team_filter=team_filter)
-    newbies = _build_newbies(conn, users, last_date, env, mode, absent=absent_weeks)
-    conn.close()
+    conn = db()
+    try:
+        users = _load_users(conn, mode, team_filter=team_filter)
+        stats, date_map = _build_stats(conn, users, mode, env, team_filter=team_filter)
+        absent_list, absent_weeks = _build_absent(conn, users, date_map, env, team_filter=team_filter, mode=mode)
+        bday = _build_birthday(users, date_str)
+        last_date = stats['dates'][-1] if stats['dates'] else ''
+        teams = _build_teams(conn, mode, last_date, env, team_filter=team_filter)
+        team_attendees = _build_team_attendees(conn, mode, last_date, env, team_filter=team_filter)
+        newbies = _build_newbies(conn, users, last_date, env, mode, absent=absent_weeks)
+    finally:
+        conn.close()
 
     month = _month_label(date_str)
     total = stats['total']
@@ -718,7 +732,8 @@ def _render_report_for_team(date_str, mode, env='commercial', team_filter=None, 
     template_path = TEMPLATE_PATH
     if not os.path.exists(template_path):
         template_path = REPORT_PATH % 'commercial'
-    html = open(template_path, encoding='utf-8').read()
+    with open(template_path, encoding='utf-8') as f:
+        html = f.read()
 
     html = re.sub(r'<p class="sub">.*?</p>', '<p class="sub">%s</p>' % sub, html, count=1)
 
@@ -774,31 +789,35 @@ def _render_report_for_team(date_str, mode, env='commercial', team_filter=None, 
             date_dir = os.path.join(team_dir, stamp)
             os.makedirs(date_dir, exist_ok=True)
             out_path = os.path.join(date_dir, '출석_그래프_%s.html' % _safe_filename(team_filter))
-            open(out_path, 'w', encoding='utf-8').write(html)
+            with open(out_path, 'w', encoding='utf-8') as f:
+                f.write(html)
         return out_path
     else:
-        open(_report_path(env), 'w', encoding='utf-8').write(html)
+        with open(_report_path(env), 'w', encoding='utf-8') as f:
+            f.write(html)
         if _is_service_date(date_str, mode):
             archive_dir = _archive_dir(env)
             os.makedirs(archive_dir, exist_ok=True)
             stamp = date_str.replace('-', '')
             archive_path = os.path.join(archive_dir, '출석_그래프_%s.html' % stamp)
-            open(archive_path, 'w', encoding='utf-8').write(html)
+            with open(archive_path, 'w', encoding='utf-8') as f:
+                f.write(html)
         return _report_path(env)
 
 
 def refresh_web_report(mode=None, env='commercial', date_str=None):
     expire_newbie_notes()  # 30일 경과 새신우 태그 자동 삭제
-    conn = _db()
-    if mode not in MODE_SHEETS:
-        row = conn.execute("SELECT value FROM settings WHERE key='current_mode'").fetchone()
-        mode = row['value'] if row else 'sunday'
-    rows = conn.execute(
-        "SELECT check_date FROM attendance WHERE mode=? AND env=? ORDER BY check_date DESC LIMIT 1",
-        (mode, env)).fetchall()
-    
-    teams_rows = conn.execute("SELECT DISTINCT team FROM users WHERE team IS NOT NULL AND team != '' ORDER BY team").fetchall()
-    conn.close()
+    conn = db()
+    try:
+        if mode not in MODE_SHEETS:
+            row = conn.execute("SELECT value FROM settings WHERE key='current_mode'").fetchone()
+            mode = row['value'] if row else 'sunday'
+        rows = conn.execute(
+            "SELECT check_date FROM attendance WHERE mode=? AND env=? ORDER BY check_date DESC LIMIT 1",
+            (mode, env)).fetchall()
+        teams_rows = conn.execute("SELECT DISTINCT team FROM users WHERE team IS NOT NULL AND team != '' ORDER BY team").fetchall()
+    finally:
+        conn.close()
 
     if not date_str:
         date_str = rows[0]['check_date'] if rows else datetime.date.today().isoformat()
@@ -829,11 +848,13 @@ def refresh_web_report(mode=None, env='commercial', date_str=None):
             fp = os.path.join(team_dir, entry)
             # 날짜별 하위 폴더 처리
             if os.path.isdir(fp) and re.fullmatch(r'\d{8}', entry):
-                # 서비스 요일이 아닌 폴더 전체 제거 (예: 목요일 등)
+                # 서비스 요일(일요일=6 / 수요일=2)이 아닌 폴더만 전체 제거 (예: 목요일 등).
+                # 두 모드의 팀 아카이브가 같은 teams/<Y/M/D> 트리를 공유하므로,
+                # 현재 모드(mode)의 요일로 판단하면 반대 모드 아카이브가 삭제된다.
+                # → 날짜가 일요일/수요일 어느 쪽도 아니면 삭제한다.
                 try:
                     d = datetime.date(int(entry[:4]), int(entry[4:6]), int(entry[6:8]))
-                    wd = _mode_weekday(mode)
-                    is_service = (wd is None) or (d.weekday() == wd)
+                    is_service = d.weekday() in (6, 2)
                 except ValueError:
                     is_service = False
                 if not is_service:

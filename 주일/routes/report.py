@@ -8,6 +8,7 @@
 """
 import datetime
 import os
+import sys
 import threading
 import time
 
@@ -17,6 +18,7 @@ from config import BASE_DIR, SERVER_ENV
 from models.database import db
 from models.settings import get_current_mode, mode_for_date
 from services import report_service
+from server_ctl import shutdown_server
 from utils import decorators
 
 bp = Blueprint('report', __name__)
@@ -27,8 +29,10 @@ def _resolve_mode(arg_mode):
     if arg_mode in ('sunday', 'wednesday'):
         return arg_mode
     conn = db()
-    mode = get_current_mode(conn)
-    conn.close()
+    try:
+        mode = get_current_mode(conn)
+    finally:
+        conn.close()
     return mode
 
 
@@ -40,8 +44,10 @@ def _resolve_date_mode(arg_mode, date_str):
     if m:
         return m
     conn = db()
-    mode = get_current_mode(conn)
-    conn.close()
+    try:
+        mode = get_current_mode(conn)
+    finally:
+        conn.close()
     return mode
 
 
@@ -98,8 +104,10 @@ def admin_export_teams():
 def admin_shutdown():
     """웹 보고서를 갱신한 뒤 서버를 종료한다. (현재 모드 기준)"""
     conn = db()
-    mode = get_current_mode(conn)
-    conn.close()
+    try:
+        mode = get_current_mode(conn)
+    finally:
+        conn.close()
     report = os.path.join(BASE_DIR, '출석_그래프_%s.html' % SERVER_ENV)
     try:
         report_service.safe_refresh(mode, SERVER_ENV)
@@ -107,12 +115,27 @@ def admin_shutdown():
         return jsonify({'ok': False, 'msg': '보고서 생성 실패: %s' % e}), 500
 
     # 배포용 PNG 생성(최선 노력) 후 종료
+    # Werkzeug make_server.shutdown()으로 서버 루프를 정상 종료시켜 atexit 파이널라이저
+    # 실행을 보장한다. (os._exit/Windows 강제 종료는 버퍼 flush를 건너뛰므로 사용하지 않는다)
+    shutdown = request.environ.get('werkzeug.server.shutdown')
+
     def _finish():
         try:
             report_service.render_png(mode, SERVER_ENV)
         except Exception:
             pass
         time.sleep(1.5)
-        os._exit(0)
+        # 버퍼를 모두 플러시해 데이터 손실을 막은 뒤 종료
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except Exception:
+            pass
+        if shutdown:
+            shutdown()
+        elif not shutdown_server():
+            # make_server 미등록(다른 실행 방식) 경우 - 정상 종료 불가능 시 최후 수단.
+            # (모든 커밋은 각 요청에서 이미 수행됨)
+            os._exit(0)
     threading.Thread(target=_finish, daemon=True).start()
     return jsonify({'ok': True, 'report': report, 'mode': mode, 'env': SERVER_ENV})

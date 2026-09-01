@@ -59,32 +59,30 @@
 
   /**
    * 동명이인 해결 UI 렌더링.
-   * @param {Object} res - need_resolution 응답
+   * @param {Object} res - need_resolution 응답 (ambiguous = 후보 사용자 목록)
    */
   function renderHistResolve(res) {
     var box = window.$('h-resolve');
     box.innerHTML = '<p class="bulk-warn">동명이인이 있어 올바른 사람을 선택해 주세요.</p>';
     var wrap = document.createElement('div');
     wrap.className = 'bulk-resolve-list';
-    res.ambiguous.forEach(function (c) {
-      var label = document.createElement('div');
-      label.className = 'bulk-resolve-name';
-      label.textContent = c.name;
-      var sel = document.createElement('select');
-      sel.className = 'bulk-resolve-select';
-      var opt0 = document.createElement('option');
-      opt0.value = ''; opt0.textContent = '선택하세요';
-      sel.appendChild(opt0);
-      res.ambiguous.forEach(function (c2) {
-        var o = document.createElement('option');
-        o.value = c2.id;
-        o.textContent = (c2.affiliation || '-') + ' · ' + (c2.team || '-') +
-          (c2.birthday ? ' · 생일 ' + window.utils.fmtBirthday(c2.birthday) : '');
-        sel.appendChild(o);
-      });
-      wrap.appendChild(label);
-      wrap.appendChild(sel);
+    var label = document.createElement('div');
+    label.className = 'bulk-resolve-name';
+    label.textContent = (res.name || '') + ' 님을 선택하세요';
+    var sel = document.createElement('select');
+    sel.className = 'bulk-resolve-select';
+    var opt0 = document.createElement('option');
+    opt0.value = ''; opt0.textContent = '선택하세요';
+    sel.appendChild(opt0);
+    res.ambiguous.forEach(function (c2) {
+      var o = document.createElement('option');
+      o.value = c2.id;
+      o.textContent = (c2.affiliation || '-') + ' · ' + (c2.team || '-') +
+        (c2.birthday ? ' · 생일 ' + window.utils.fmtBirthday(c2.birthday) : '');
+      sel.appendChild(o);
     });
+    wrap.appendChild(label);
+    wrap.appendChild(sel);
     box.appendChild(wrap);
     var btn = document.createElement('button');
     btn.className = 'btn btn-primary';

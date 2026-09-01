@@ -6,7 +6,7 @@
 
   var pinValue = '';
   var adminPin = '';
-  var MAX_PIN = 4; // 기본 PIN(4자리)에 맞춘 최대 입력 길이
+  var MAX_PIN = 12; // config.py의 ADMIN_PIN은 .admin_pin 파일/환경변수로 길이 변경 가능 → 고정 4자리 금지
   var pinDots = [];
   var KP = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '지우기', '0', '확인'];
 

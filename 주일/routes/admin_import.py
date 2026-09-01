@@ -14,6 +14,8 @@ from utils import decorators
 
 bp = Blueprint('admin_import', __name__)
 
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10MB
+
 
 @bp.route('/api/admin/import/template', methods=['GET'])
 @decorators.require_admin_pin
@@ -34,7 +36,9 @@ def api_import_preview():
     f = request.files.get('file')
     if not f or not f.filename:
         return jsonify({'ok': False, 'msg': '파일을 선택해주세요.'}), 400
-    raw = f.read()
+    raw = f.read(MAX_UPLOAD_BYTES + 1)
+    if len(raw) > MAX_UPLOAD_BYTES:
+        return jsonify({'ok': False, 'msg': '파일이 너무 큽니다. 최대 10MB까지 업로드할 수 있습니다.'}), 413
     if not raw:
         return jsonify({'ok': False, 'msg': '파일이 비어 있습니다.'}), 400
     ok, resp = import_service.build_preview(f.filename, raw)

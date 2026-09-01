@@ -7,12 +7,14 @@
 - 루트(/) 인덱스 라우트
 """
 from flask import Flask, send_from_directory
+from werkzeug.serving import make_server
 
 from config import BASE_DIR
 from models.database import init_db
 from routes import (admin_absence, admin_attendance, admin_auth,
                     admin_import, admin_team, admin_time, admin_user,
                     public, report)
+from server_ctl import register_server
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
@@ -46,4 +48,12 @@ def index():
 init_db()
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8000, debug=False)
+    _server = make_server('127.0.0.1', 8000, app)
+    register_server(_server)
+    try:
+        _server.serve_forever()
+    finally:
+        # 정상 종료: 서버 루프 종료 후 파이널라이저가 flush/atexit를 처리한다.
+        import sys
+        sys.stdout.flush()
+        sys.stderr.flush()

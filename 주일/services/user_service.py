@@ -4,8 +4,11 @@
 - 검색(일반·숫자·초성) 정렬/순위 로직
 - 비고의 '새신우' 태그 정규화, 생일 포맷 통일
 """
+import calendar
 import datetime
 import re
+import threading
+import time
 
 from models import user as user_model
 from models.database import db
@@ -30,19 +33,28 @@ def norm_birthday(b):
     """생일을 네 자리 숫자(MMDD)로 통일한다. -> '0102' (1월 2일)
 
     지원 입력: 'MM월 DD일', 'M월 D일', 'YYYY-MM-DD', 'YYYY.MM.DD', 'MMDD'
-    변환 실패 시 원본을 그대로 반환한다.
+    MMDD는 월(01~12)·일(01~31) 범위를 검증하며, 변환 실패 시 원본 그대로 반환한다.
     """
     s = (b or '').strip()
     if not s:
         return ''
     if re.match(r'^\d{4}$', s):
-        return s
+        mo, d = int(s[:2]), int(s[2:])
+        if 1 <= mo <= 12 and 1 <= d <= calendar.monthrange(2000, mo)[1]:
+            return s
+        return ''
     m = re.match(r'^(\d{4})[-.](\d{1,2})[-.](\d{1,2})$', s)
     if m:
-        return '%02d%02d' % (int(m.group(2)), int(m.group(3)))
+        mo, d = int(m.group(2)), int(m.group(3))
+        if 1 <= mo <= 12 and 1 <= d <= calendar.monthrange(2000, mo)[1]:
+            return '%02d%02d' % (mo, d)
+        return ''
     m = re.match(r'^(\d{1,2})\s*월\s*(\d{1,2})\s*일?$', s)
     if m:
-        return '%02d%02d' % (int(m.group(1)), int(m.group(2)))
+        mo, d = int(m.group(1)), int(m.group(2))
+        if 1 <= mo <= 12 and 1 <= d <= calendar.monthrange(2000, mo)[1]:
+            return '%02d%02d' % (mo, d)
+        return ''
     return s
 
 
@@ -73,17 +85,32 @@ def validate_user_data(data):
     return True, ''
 
 
+_last_prune_ts = 0
+_prune_lock = threading.Lock()
+
+
+def _maybe_prune(conn):
+    """5분 주기로 전역자 정리를 실행한다. (스레드 안전: 동시 실행 방지)"""
+    global _last_prune_ts
+    with _prune_lock:
+        if time.time() - _last_prune_ts > 300:
+            prune_expired_users(conn)
+            _last_prune_ts = time.time()
+
+
 def search_users_with_mode(q, mode):
     """사용자 검색. 빈 쿼리는 전체 목록(소속·id 정렬), 그 외엔 숫자/초성/일반 순위 검색.
 
     반환: 사용자 dict 목록
     """
     conn = db()
-    prune_expired_users(conn)
-    if mode not in MODES:
-        mode = get_current_mode(conn)
-    users = _search_all_users(conn)
-    conn.close()
+    try:
+        _maybe_prune(conn)
+        if mode not in MODES:
+            mode = get_current_mode(conn)
+        users = _search_all_users(conn)
+    finally:
+        conn.close()
 
     q = (q or '').strip()
     if not q:

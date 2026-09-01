@@ -26,9 +26,11 @@ def get_current_mode(conn=None):
     own = conn is None
     if own:
         conn = db()
-    mode = get_setting(conn, 'current_mode', MODE_SUNDAY)
-    if own:
-        conn.close()
+    try:
+        mode = get_setting(conn, 'current_mode', MODE_SUNDAY)
+    finally:
+        if own:
+            conn.close()
     return mode
 
 

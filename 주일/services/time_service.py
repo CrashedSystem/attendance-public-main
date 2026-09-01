@@ -126,12 +126,12 @@ def get_time_info():
     """현재 시스템(로컬) 시간과 인터넷(NTP) 시간을 표시한다. (읽기 전용)"""
     internet = None
     try:
-        internet = datetime.datetime.utcfromtimestamp(_ntp_time())
+        internet = datetime.datetime.fromtimestamp(_ntp_time(), datetime.timezone.utc)
     except Exception:
         internet = None
     return {
         'system_local': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'system_utc': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+        'system_utc': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
         'internet_utc': internet.strftime('%Y-%m-%d %H:%M:%S') if internet else None,
     }
 
@@ -143,7 +143,7 @@ def sync_time():
     """
     try:
         epoch = _ntp_time()
-        dt = datetime.datetime.utcfromtimestamp(epoch)
+        dt = datetime.datetime.fromtimestamp(epoch, datetime.timezone.utc)
     except Exception as e:
         return ({'ok': False, 'msg': '인터넷 시간을 가져오지 못했습니다. 네트워크를 확인하세요. (%s)' % e}, 500)
     try:

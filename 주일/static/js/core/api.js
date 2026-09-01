@@ -33,7 +33,11 @@
       headers: headers
     };
     if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
-    return fetch(path, init).then(function (r) { return r.json(); });
+    return fetch(path, init).then(function (r) {
+      return r.json().catch(function () {
+        return { ok: false, msg: '서버 응답을 해석할 수 없습니다. (HTTP ' + r.status + ')' };
+      });
+    });
   }
 
   /**

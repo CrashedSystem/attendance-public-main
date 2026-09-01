@@ -27,25 +27,27 @@ def get_absentees_for_date(date_str, mode='wednesday', env=None):
     """
     env = env or SERVER_ENV
     conn = db()
-    absentees = []
-    if date_str:
-        attended = _attended_user_ids(conn, date_str, mode, env)
-        abs_map = {r['user_id']: {'id': r['id'], 'reason': r['reason'] or ''}
-                   for r in absence_model.get_absences(conn, date_str, mode, env)}
-        users = user_model.get_chaplains(conn)
-        ids = [u['id'] for u in users]
-        hist = absence_model.get_absence_history_for_ids(conn, ids, mode, env, date_str, limit_per_user=4)
-        for u in users:
-            if u['id'] in attended:
-                continue
-            h = hist.get(u['id'], [])
-            absentees.append({
-                'id': u['id'], 'name': u['name'],
-                'affiliation': u['affiliation'] or '', 'team': u['team'] or '',
-                'absence': abs_map.get(u['id']),
-                'history': h,
-            })
-    conn.close()
+    try:
+        absentees = []
+        if date_str:
+            attended = _attended_user_ids(conn, date_str, mode, env)
+            abs_map = {r['user_id']: {'id': r['id'], 'reason': r['reason'] or ''}
+                       for r in absence_model.get_absences(conn, date_str, mode, env)}
+            users = user_model.get_chaplains(conn)
+            ids = [u['id'] for u in users]
+            hist = absence_model.get_absence_history_for_ids(conn, ids, mode, env, date_str, limit_per_user=4)
+            for u in users:
+                if u['id'] in attended:
+                    continue
+                h = hist.get(u['id'], [])
+                absentees.append({
+                    'id': u['id'], 'name': u['name'],
+                    'affiliation': u['affiliation'] or '', 'team': u['team'] or '',
+                    'absence': abs_map.get(u['id']),
+                    'history': h,
+                })
+    finally:
+        conn.close()
     return {'ok': True, 'date': date_str, 'absentees': absentees}
 
 
@@ -59,13 +61,14 @@ def save_absence_reason(user_id, date_str, reason, mode='wednesday', env=None):
     if not user_id or not date_str:
         return ({'ok': False, 'msg': '사용자와 날짜를 입력하세요.'}, 400)
     conn = db()
-    if not user_model.get_user(conn, user_id):
+    try:
+        if not user_model.get_user(conn, user_id):
+            return ({'ok': False, 'msg': '사용자가 없습니다.'}, 404)
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        absence_model.create_or_update_absence(conn, user_id, date_str, reason, mode, env, now)
+        conn.commit()
+    finally:
         conn.close()
-        return ({'ok': False, 'msg': '사용자가 없습니다.'}, 404)
-    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    absence_model.create_or_update_absence(conn, user_id, date_str, reason, mode, env, now)
-    conn.commit()
-    conn.close()
     safe_refresh_with_png(mode, env)
     return ({'ok': True}, 200)
 
@@ -77,14 +80,15 @@ def delete_absence(aid, env=None):
     """
     env = env or SERVER_ENV
     conn = db()
-    row = absence_model.get_absences_by_id(conn, aid)
-    if not row:
+    try:
+        row = absence_model.get_absences_by_id(conn, aid)
+        if not row:
+            return ({'ok': False, 'msg': '등록된 사유가 없습니다.'}, 404)
+        absence_model.delete_absence(conn, aid)
+        conn.commit()
+        mode = row['mode'] or 'wednesday'
+        row_env = row['env'] or env
+    finally:
         conn.close()
-        return ({'ok': False, 'msg': '등록된 사유가 없습니다.'}, 404)
-    absence_model.delete_absence(conn, aid)
-    conn.commit()
-    mode = row['mode'] or 'wednesday'
-    row_env = row['env'] or env
-    conn.close()
     safe_refresh_with_png(mode, row_env)
     return ({'ok': True}, 200)

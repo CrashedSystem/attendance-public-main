@@ -17,6 +17,7 @@ import csv
 import datetime
 import io
 import re
+import threading
 import time
 import uuid
 
@@ -63,7 +64,9 @@ MODE_ALIASES = {
     '수요일': 'wednesday', '수': 'wednesday', 'wednesday': 'wednesday', 'wed': 'wednesday',
 }
 
-_PREVIEWS = {}  # token -> preview result (최근 10개만 유지)
+_PREVIEWS = {}  # token -> preview result (최근 10개만 유지, 접근순 LRU)
+_PREVIEWS_LOCK = threading.Lock()
+_PREVIEWS_MAX = 10
 
 
 def _clean(v):
@@ -257,18 +260,29 @@ def _match_existing(conn, name, aff=None, team=None):
 
 
 def _preview_cache_check(token):
-    if token in _PREVIEWS and _PREVIEWS[token]['expires'] > time.time():
-        return _PREVIEWS[token]['data']
+    with _PREVIEWS_LOCK:
+        e = _PREVIEWS.get(token)
+        if e and e['expires'] <= time.time():
+            _PREVIEWS.pop(token, None)  # 만료 즉시 제거 (메모리 정리)
+            return None
+        if e:
+            e['last'] = time.time()  # LRU 갱신
+            return e['data']
     return None
 
 
 def _cache_put(data):
     token = uuid.uuid4().hex
-    _PREVIEWS[token] = {'expires': time.time() + 3600, 'data': data}
-    # 최근 10개 유지
-    if len(_PREVIEWS) > 10:
-        for k in sorted(_PREVIEWS.keys(), key=lambda k: _PREVIEWS[k]['expires'])[:-10]:
+    now = time.time()
+    with _PREVIEWS_LOCK:
+        _PREVIEWS[token] = {'expires': now + 3600, 'last': now, 'data': data}
+        # 크기 상한 도달 시 만료 항목 먼저 제거, 없으면 가장 오래 접근한 항목 제거
+        expired = [k for k, v in _PREVIEWS.items() if v['expires'] <= now]
+        for k in expired:
             _PREVIEWS.pop(k, None)
+        while len(_PREVIEWS) > _PREVIEWS_MAX:
+            oldest = min(_PREVIEWS, key=lambda k: _PREVIEWS[k]['last'])
+            _PREVIEWS.pop(oldest, None)
     return token
 
 
@@ -306,12 +320,14 @@ def build_preview(filename, raw_bytes):
 
     # 기존 매칭 판단
     conn = db()
-    for it in user_items:
-        ex = _match_existing(conn, it['name'], it['aff'], it['team'])
-        if ex:
-            it['action'] = 'match'
-            it['uid'] = ex['id']
-    conn.close()
+    try:
+        for it in user_items:
+            ex = _match_existing(conn, it['name'], it['aff'], it['team'])
+            if ex:
+                it['action'] = 'match'
+                it['uid'] = ex['id']
+    finally:
+        conn.close()
 
     # 출석 매칭
     att_items = []
@@ -338,8 +354,10 @@ def build_preview(filename, raw_bytes):
         else:
             ex = None
             conn = db()
-            ex = _match_existing(conn, name, aff or None, None)
-            conn.close()
+            try:
+                ex = _match_existing(conn, name, aff or None, None)
+            finally:
+                conn.close()
             if ex:
                 uid = ex['id']
                 action = 'add'
@@ -357,16 +375,18 @@ def build_preview(filename, raw_bytes):
     # 중복 출석 선별 (기존 DB 기준)
     dup = 0
     conn = db()
-    _names = set(r['name'] for r in conn.execute('SELECT DISTINCT name FROM users').fetchall())
-    for at in att_items:
-        if at['action'] != 'add':
-            continue
-        if at['uid'] is None:
-            continue
-        if attendance_model.get_attendance(conn, at['uid'], at['date'], at['mode'], SERVER_ENV):
-            at['action'] = 'dup'
-            dup += 1
-    conn.close()
+    try:
+        _names = set(r['name'] for r in conn.execute('SELECT DISTINCT name FROM users').fetchall())
+        for at in att_items:
+            if at['action'] != 'add':
+                continue
+            if at['uid'] is None:
+                continue
+            if attendance_model.get_attendance(conn, at['uid'], at['date'], at['mode'], SERVER_ENV):
+                at['action'] = 'dup'
+                dup += 1
+    finally:
+        conn.close()
 
     data = {
         'filename': filename,
@@ -416,7 +436,7 @@ def commit(token):
             it['action'] = 'match'
         else:
             note = it['note']
-            if '새신우' in note or '새신우' in (note or ''):
+            if '새신우' in note:
                 from services.user_service import normalize_newbie_note
                 note = normalize_newbie_note(note)
             new_id = user_model.create_user(conn, {
@@ -463,8 +483,10 @@ def commit(token):
     _is_new = sum(1 for it in data['users'] if it['action'] == 'new')
     _is_match = sum(1 for it in data['users'] if it['action'] == 'match')
     _new_teams = list({it['team'] for it in data['users'] if it['team']})
-    conn.commit()
-    conn.close()
+    try:
+        conn.commit()
+    finally:
+        conn.close()
 
     # 보고서 갱신 (양쪽 모드)
     for m in ('sunday', 'wednesday'):

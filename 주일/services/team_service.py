@@ -47,7 +47,12 @@ def set_custom_affiliations(conn, affs):
     set_setting(conn, 'custom_affiliations', json.dumps(affs, ensure_ascii=False))
 
 
+_COUNT_COLUMNS = ('affiliation', 'team')
+
+
 def _count_by(conn, column, value):
+    if column not in _COUNT_COLUMNS:
+        raise ValueError('unsupported column: %r' % column)
     return conn.execute('SELECT COUNT(*) FROM users WHERE %s=?' % column, (value,)).fetchone()[0]
 
 
@@ -63,13 +68,15 @@ def get_teams_affiliations_mapping():
     반환: {'teams', 'affiliations', 'mapping'}
     """
     conn = db()
-    rows = conn.execute(
-        'SELECT affiliation, team, COUNT(*) c FROM users '
-        'WHERE affiliation IS NOT NULL AND affiliation != "" AND team IS NOT NULL AND team != "" '
-        'GROUP BY affiliation, team').fetchall()
-    custom = get_custom_teams(conn)
-    custom_affs = get_custom_affiliations(conn)
-    conn.close()
+    try:
+        rows = conn.execute(
+            'SELECT affiliation, team, COUNT(*) c FROM users '
+            'WHERE affiliation IS NOT NULL AND affiliation != "" AND team IS NOT NULL AND team != "" '
+            'GROUP BY affiliation, team').fetchall()
+        custom = get_custom_teams(conn)
+        custom_affs = get_custom_affiliations(conn)
+    finally:
+        conn.close()
     counts = {}
     for r in rows:
         counts.setdefault(r['affiliation'], []).append((r['c'], r['team']))
@@ -90,14 +97,16 @@ def bulk_move_team(affiliation, team):
     if not affiliation or not team:
         return ({'ok': False, 'msg': '소속과 이동할 팀을 모두 선택하세요.'}, 400)
     conn = db()
-    cur = conn.execute('UPDATE users SET team=? WHERE affiliation=?', (team, affiliation))
-    moved = cur.rowcount
-    custom = get_custom_teams(conn)
-    if team in custom:
-        custom.remove(team)
-        set_custom_teams(conn, custom)
-    conn.commit()
-    conn.close()
+    try:
+        cur = conn.execute('UPDATE users SET team=? WHERE affiliation=?', (team, affiliation))
+        moved = cur.rowcount
+        custom = get_custom_teams(conn)
+        if team in custom:
+            custom.remove(team)
+            set_custom_teams(conn, custom)
+        conn.commit()
+    finally:
+        conn.close()
     safe_refresh()
     return ({'ok': True, 'moved': moved, 'affiliation': affiliation, 'team': team}, 200)
 
@@ -116,21 +125,22 @@ def rename_affiliation(old_name, new_name):
     if old == new:
         return ({'ok': False, 'msg': '새 이름이 기존 이름과 같습니다.'}, 400)
     conn = db()
-    exists = _count_by(conn, 'affiliation', new)
-    custom = get_custom_affiliations(conn)
-    if exists or new in custom:
+    try:
+        exists = _count_by(conn, 'affiliation', new)
+        custom = get_custom_affiliations(conn)
+        if exists or new in custom:
+            return ({'ok': False, 'msg': "'%s' 소속이 이미 존재합니다." % new}, 400)
+        cur = conn.execute('UPDATE users SET affiliation=? WHERE affiliation=?', (new, old))
+        renamed = cur.rowcount
+        if old in custom:
+            custom = [new if a == old else a for a in custom]
+            set_custom_affiliations(conn, custom)
+        if old == TEMP_AFFIL and TEMP_AFFIL not in custom:
+            custom.append(TEMP_AFFIL)
+            set_custom_affiliations(conn, custom)
+        conn.commit()
+    finally:
         conn.close()
-        return ({'ok': False, 'msg': "'%s' 소속이 이미 존재합니다." % new}, 400)
-    cur = conn.execute('UPDATE users SET affiliation=? WHERE affiliation=?', (new, old))
-    renamed = cur.rowcount
-    if old in custom:
-        custom = [new if a == old else a for a in custom]
-        set_custom_affiliations(conn, custom)
-    if old == TEMP_AFFIL and TEMP_AFFIL not in custom:
-        custom.append(TEMP_AFFIL)
-        set_custom_affiliations(conn, custom)
-    conn.commit()
-    conn.close()
     safe_refresh()
     return ({'ok': True, 'renamed': renamed, 'old_name': old, 'new_name': new}, 200)
 
@@ -144,15 +154,16 @@ def create_affiliation(name):
     """
     name = (name or '').strip() or TEMP_AFFIL
     conn = db()
-    existing = _count_by(conn, 'affiliation', name)
-    custom = get_custom_affiliations(conn)
-    if existing or name in custom:
+    try:
+        existing = _count_by(conn, 'affiliation', name)
+        custom = get_custom_affiliations(conn)
+        if existing or name in custom:
+            return ({'ok': False, 'msg': "'%s' 소속이 이미 존재합니다." % name}, 400)
+        custom.append(name)
+        set_custom_affiliations(conn, custom)
+        conn.commit()
+    finally:
         conn.close()
-        return ({'ok': False, 'msg': "'%s' 소속이 이미 존재합니다." % name}, 400)
-    custom.append(name)
-    set_custom_affiliations(conn, custom)
-    conn.commit()
-    conn.close()
     safe_refresh()
     return ({'ok': True, 'name': name, 'temp': name == TEMP_AFFIL}, 200)
 
@@ -172,18 +183,19 @@ def rename_team(old_name, new_name):
     if old == new:
         return ({'ok': False, 'msg': '새 이름이 기존 이름과 같습니다.'}, 400)
     conn = db()
-    dup = _count_by(conn, 'team', new)
-    custom = get_custom_teams(conn)
-    if dup or new in custom:
+    try:
+        dup = _count_by(conn, 'team', new)
+        custom = get_custom_teams(conn)
+        if dup or new in custom:
+            return ({'ok': False, 'msg': "'%s' 팀이 이미 존재합니다." % new}, 400)
+        cur = conn.execute('UPDATE users SET team=? WHERE team=?', (new, old))
+        renamed = cur.rowcount
+        if old in custom:
+            custom = [new if t == old else t for t in custom]
+            set_custom_teams(conn, custom)
+        conn.commit()
+    finally:
         conn.close()
-        return ({'ok': False, 'msg': "'%s' 팀이 이미 존재합니다." % new}, 400)
-    cur = conn.execute('UPDATE users SET team=? WHERE team=?', (new, old))
-    renamed = cur.rowcount
-    if old in custom:
-        custom = [new if t == old else t for t in custom]
-        set_custom_teams(conn, custom)
-    conn.commit()
-    conn.close()
     safe_refresh()
     return ({'ok': True, 'renamed': renamed, 'old_name': old, 'new_name': new}, 200)
 
@@ -197,15 +209,16 @@ def create_team(name):
     if not name:
         return ({'ok': False, 'msg': '팀 이름을 입력하세요.'}, 400)
     conn = db()
-    dup = _count_by(conn, 'team', name)
-    custom = get_custom_teams(conn)
-    if dup or name in custom:
+    try:
+        dup = _count_by(conn, 'team', name)
+        custom = get_custom_teams(conn)
+        if dup or name in custom:
+            return ({'ok': False, 'msg': "'%s' 팀이 이미 존재합니다." % name}, 400)
+        custom.append(name)
+        set_custom_teams(conn, custom)
+        conn.commit()
+    finally:
         conn.close()
-        return ({'ok': False, 'msg': "'%s' 팀이 이미 존재합니다." % name}, 400)
-    custom.append(name)
-    set_custom_teams(conn, custom)
-    conn.commit()
-    conn.close()
     return ({'ok': True, 'name': name}, 200)
 
 
@@ -220,19 +233,19 @@ def delete_team(name):
     if not name:
         return ({'ok': False, 'msg': '삭제할 팀을 선택하세요.'}, 400)
     conn = db()
-    cnt = _count_by(conn, 'team', name)
-    custom = get_custom_teams(conn)
-    if cnt > 0:
+    try:
+        cnt = _count_by(conn, 'team', name)
+        custom = get_custom_teams(conn)
+        if cnt > 0:
+            return ({'ok': False, 'msg': "'%s' 팀에 인원 %d명이 있어 삭제할 수 없습니다. 먼저 인원을 이동하세요."
+                     % (name, cnt)}, 400)
+        if name not in custom:
+            return ({'ok': False, 'msg': "'%s' 팀이 존재하지 않거나 인원이 있는 팀입니다." % name}, 400)
+        custom.remove(name)
+        set_custom_teams(conn, custom)
+        conn.commit()
+    finally:
         conn.close()
-        return ({'ok': False, 'msg': "'%s' 팀에 인원 %d명이 있어 삭제할 수 없습니다. 먼저 인원을 이동하세요."
-                 % (name, cnt)}, 400)
-    if name not in custom:
-        conn.close()
-        return ({'ok': False, 'msg': "'%s' 팀이 존재하지 않거나 인원이 있는 팀입니다." % name}, 400)
-    custom.remove(name)
-    set_custom_teams(conn, custom)
-    conn.commit()
-    conn.close()
     safe_refresh()
     return ({'ok': True, 'name': name}, 200)
 
@@ -243,8 +256,10 @@ def delete_team(name):
 def get_newbie_days():
     """새신우 유지 기간(일) 조회. 기본 30, 범위 1~365로 제한."""
     conn = db()
-    raw = get_setting(conn, 'newbie_days', None)
-    conn.close()
+    try:
+        raw = get_setting(conn, 'newbie_days', None)
+    finally:
+        conn.close()
     try:
         v = int(raw) if raw else DEFAULT_NEWBIE_DAYS
     except Exception:
@@ -264,9 +279,11 @@ def set_newbie_days(days):
     if not (1 <= v <= 365):
         return ({'ok': False, 'msg': '1~365 사이의 값으로 입력하세요.'}, 400)
     conn = db()
-    set_setting(conn, 'newbie_days', str(v))
-    conn.commit()
-    conn.close()
+    try:
+        set_setting(conn, 'newbie_days', str(v))
+        conn.commit()
+    finally:
+        conn.close()
     safe_refresh()
     return ({'ok': True, 'days': v}, 200)
 
@@ -277,8 +294,10 @@ DEFAULT_SUNDAY_DETAIL_THRESHOLD = 30
 def get_sunday_detail_threshold():
     """일요일 보고서 전체 출석자 상세 명단 표시 기준값(명). 기본 30, 범위 1~999."""
     conn = db()
-    raw = get_setting(conn, 'sunday_detail_threshold', None)
-    conn.close()
+    try:
+        raw = get_setting(conn, 'sunday_detail_threshold', None)
+    finally:
+        conn.close()
     try:
         v = int(raw) if raw else DEFAULT_SUNDAY_DETAIL_THRESHOLD
     except Exception:
@@ -298,8 +317,10 @@ def set_sunday_detail_threshold(value):
     if not (1 <= v <= 999):
         return ({'ok': False, 'msg': '1~999 사이의 값으로 입력하세요.'}, 400)
     conn = db()
-    set_setting(conn, 'sunday_detail_threshold', str(v))
-    conn.commit()
-    conn.close()
+    try:
+        set_setting(conn, 'sunday_detail_threshold', str(v))
+        conn.commit()
+    finally:
+        conn.close()
     safe_refresh()
     return ({'ok': True, 'sundayDetailThreshold': v}, 200)

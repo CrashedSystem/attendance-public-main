@@ -4,10 +4,12 @@ import re
 import sqlite3
 import sys
 
+from config import DB_PATH as CONFIG_DB_PATH
 from dummy_data import DUMMY_ROWS, ARCHIVE_ROWS, ABSENCE_SAMPLE, build_attendance
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, sys.argv[1] if len(sys.argv) > 1 else '군종.db')
+# 기본값은 운영 DB(config.DB_PATH). 별도 테스트 DB는 인자로 지정 가능.
+DB_PATH = os.path.join(BASE_DIR, sys.argv[1]) if len(sys.argv) > 1 else CONFIG_DB_PATH
 
 
 def norm_date(s):
@@ -41,7 +43,17 @@ def norm_birthday(s):
     return s
 
 
+_ALLOWED_TABLES = ('users', 'users_archive', 'attendance', 'absences', 'settings')
+_ALLOWED_COLUMNS = ('prev_church', 'is_chaplain', 'mode', 'env')
+
+
 def _add_column(conn, table, column, decl):
+    if table not in _ALLOWED_TABLES:
+        raise ValueError('unsupported table: %r' % table)
+    if column not in _ALLOWED_COLUMNS:
+        raise ValueError('unsupported column: %r' % column)
+    if not re.fullmatch(r"(?:TEXT|INTEGER)(?: DEFAULT .+)?", decl, re.I):
+        raise ValueError('unsupported decl: %r' % decl)
     cols = [r[1] for r in conn.execute('PRAGMA table_info("%s")' % table)]
     if column not in cols:
         conn.execute('ALTER TABLE "%s" ADD COLUMN %s %s' % (table, column, decl))
@@ -99,6 +111,9 @@ def ensure_schema(conn):
     _add_column(conn, 'users_archive', 'is_chaplain', 'INTEGER DEFAULT 0')
     _add_column(conn, 'attendance', 'mode', "TEXT DEFAULT 'sunday'")
     _add_column(conn, 'attendance', 'env', "TEXT DEFAULT 'commercial'")
+    conn.execute(
+        'CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance '
+        'ON attendance (user_id, check_date, mode, env)')
 
 
 def seed(conn, rows, archive_rows, absences):

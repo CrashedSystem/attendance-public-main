@@ -31,8 +31,10 @@ def admin_login():
 def admin_get_mode():
     """현재 서비스 모드와 서버 환경을 반환한다."""
     conn = db()
-    mode = settings_model.get_current_mode(conn)
-    conn.close()
+    try:
+        mode = settings_model.get_current_mode(conn)
+    finally:
+        conn.close()
     return jsonify({'mode': mode, 'env': SERVER_ENV})
 
 
@@ -46,7 +48,9 @@ def api_set_mode():
     if not ok:
         return jsonify({'ok': False, 'msg': msg}), 400
     conn = db()
-    settings_model.set_current_mode(conn, mode)
-    conn.close()
+    try:
+        settings_model.set_current_mode(conn, mode)
+    finally:
+        conn.close()
     report_service.safe_refresh(mode, SERVER_ENV)
     return jsonify({'ok': True, 'mode': mode})

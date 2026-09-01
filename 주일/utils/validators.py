@@ -4,6 +4,7 @@
 각 검증 함수는 (ok, msg) 또는 유효 값/예외 형태로 일관되게 결과를 반환한다.
 """
 import datetime
+import hmac
 import re
 
 from config import ADMIN_PIN
@@ -14,7 +15,7 @@ def validate_pin(pin):
 
     반환: (ok, msg)
     """
-    if str(pin) == str(ADMIN_PIN):
+    if hmac.compare_digest(str(pin), str(ADMIN_PIN)):
         return True, ''
     return False, 'PIN이 올바르지 않습니다.'
 

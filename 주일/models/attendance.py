@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """출석(attendance) 관련 DB 쿼리.
 """
-from models.settings import is_service_date
+from models.settings import get_current_mode, is_service_date
 
 
 def get_attendance(conn, user_id, date, mode, env):
@@ -55,22 +55,26 @@ def get_attendance_history(conn, env, limit=500):
 
 
 def get_attendance_by_date(conn, date, mode, env):
-    """지정 날짜·모드·환경의 출석 목록(시각순)."""
+    """지정 날짜·모드·환경의 출석 목록(시각순). 팀명 포함."""
     rows = conn.execute(
-        'SELECT * FROM attendance WHERE check_date=? AND mode=? AND env=? ORDER BY check_time',
+        'SELECT a.*, u.team AS team FROM attendance a '
+        'LEFT JOIN users u ON a.user_id = u.id '
+        'WHERE a.check_date=? AND a.mode=? AND a.env=? ORDER BY a.check_time',
         (date, mode, env)).fetchall()
     return [dict(r) for r in rows]
 
 
 def get_attendance_recent(conn, mode, env, limit=200):
-    """지정 모드·환경의 최근 출석 목록(날짜·시각 내림차순)."""
+    """지정 모드·환경의 최근 출석 목록(날짜·시각 내림차순). 팀명 포함."""
     rows = conn.execute(
-        'SELECT * FROM attendance WHERE mode=? AND env=? ORDER BY check_date DESC, check_time LIMIT ?',
+        'SELECT a.*, u.team AS team FROM attendance a '
+        'LEFT JOIN users u ON a.user_id = u.id '
+        'WHERE a.mode=? AND a.env=? ORDER BY a.check_date DESC, a.check_time DESC LIMIT ?',
         (mode, env, limit)).fetchall()
     return [dict(r) for r in rows]
 
 
-def get_report_data(conn, date_str, mode=None):
+def get_report_data(conn, date_str, mode=None, env=None):
     """출석 보고서용 데이터를 DB에서 읽는다.
 
     반환: (users, attendance, last_attendance, absent_weeks)
@@ -80,30 +84,40 @@ def get_report_data(conn, date_str, mode=None):
     - absent_weeks: {user_id: 보고일 기준 연속 미출석 주수}
 
     mode='sunday'|'wednesday'면 해당 모드 출석만 필터링하고, 서비스 요일에 해당하지 않는
-    날짜의 기록은 통계에서 제외한다.
+    날짜의 기록은 통계에서 제외한다. env가 주어지면 해당 환경(sunday/wednesday 외 동작 포함)으로 필터링.
     """
+    if mode not in ('sunday', 'wednesday'):
+        mode = get_current_mode(conn)
     users = [dict(r) for r in conn.execute(
         'SELECT id, name, affiliation, team, birthday, note FROM users ORDER BY affiliation, id')]
+    env_ph = ' AND env=?' if env else ''
+    env_args = (env,) if env else ()
     if mode in ('sunday', 'wednesday'):
         att_rows = conn.execute(
-            'SELECT user_id, check_time, check_date FROM attendance WHERE check_date=? AND mode=?',
-            (date_str, mode)).fetchall()
+            'SELECT user_id, check_time, check_date FROM attendance WHERE check_date=? AND mode=?' + env_ph,
+            (date_str, mode) + env_args).fetchall()
         last_rows = conn.execute(
-            'SELECT user_id, MAX(check_date) AS last_date FROM attendance WHERE mode=? GROUP BY user_id',
-            (mode,)).fetchall()
+            'SELECT user_id, MAX(check_date) AS last_date FROM attendance WHERE mode=?' + env_ph + ' GROUP BY user_id',
+            (mode,) + env_args).fetchall()
         event_rows = conn.execute(
-            'SELECT DISTINCT check_date FROM attendance WHERE mode=? ORDER BY check_date', (mode,)).fetchall()
+            'SELECT DISTINCT check_date FROM attendance WHERE mode=?' + env_ph + ' ORDER BY check_date',
+            (mode,) + env_args).fetchall()
         user_event_rows = conn.execute(
-            'SELECT user_id, check_date FROM attendance WHERE mode=?', (mode,)).fetchall()
+            'SELECT user_id, check_date FROM attendance WHERE mode=?' + env_ph,
+            (mode,) + env_args).fetchall()
     else:
         att_rows = conn.execute(
-            'SELECT user_id, check_time, check_date FROM attendance WHERE check_date=?', (date_str,)).fetchall()
+            'SELECT user_id, check_time, check_date FROM attendance WHERE check_date=?' + env_ph,
+            (date_str,) + env_args).fetchall()
         last_rows = conn.execute(
-            'SELECT user_id, MAX(check_date) AS last_date FROM attendance GROUP BY user_id').fetchall()
+            'SELECT user_id, MAX(check_date) AS last_date FROM attendance' + env_ph + ' GROUP BY user_id',
+            env_args).fetchall()
         event_rows = conn.execute(
-            'SELECT DISTINCT check_date FROM attendance ORDER BY check_date').fetchall()
+            'SELECT DISTINCT check_date FROM attendance' + env_ph + ' ORDER BY check_date',
+            env_args).fetchall()
         user_event_rows = conn.execute(
-            'SELECT user_id, check_date FROM attendance').fetchall()
+            'SELECT user_id, check_date FROM attendance' + env_ph,
+            env_args).fetchall()
     attendance = {r['user_id']: r['check_time'] for r in att_rows}
     if mode in ('sunday', 'wednesday') and not is_service_date(date_str, mode):
         attendance = {}

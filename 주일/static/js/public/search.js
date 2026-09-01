@@ -6,21 +6,24 @@
 
   var text = '';
   var lastSearch = null;
+  var searchSeq = 0;
 
   /**
    * 검색 실행 — 서버에서 사용자 목록 조회 후 렌더링.
    * 입력값이 직전 검색과 같으면 무시(불필요한 요청 방지).
+   * 응답 시점에 최신 검색(세대 번호)과 다르면 무시(이전 검색 응답이 지연 도착해도 안 덮어쓴다).
    * @param {string} q - 검색어
    */
   function search(q) {
     q = (q || '').trim();
     if (q === lastSearch) return;
     lastSearch = q;
+    var seq = ++searchSeq;
     var box = window.$('suggestions');
     var mode = window.modeManager.get();
     window.api.searchUsers(q, mode)
       .then(function (users) {
-        if (lastSearch !== (text || '').trim()) return;
+        if (seq !== searchSeq) return;
         box.innerHTML = '';
         if (!users.length) {
           var d = document.createElement('div');

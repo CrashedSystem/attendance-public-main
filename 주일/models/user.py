@@ -10,7 +10,11 @@ from constants import USER_FIELDS
 
 def migrate_chaplain(conn, table):
     """users/users_archive에 is_chaplain 컬럼을 추가하고, note의 '군종' 표시를 컬럼으로 이전한다.
+
+    table은 'users' / 'users_archive' 만 허용. 식별자 인젝션 방지를 위해 화이트리스트 검증.
     """
+    if table not in ('users', 'users_archive'):
+        raise ValueError('unsupported table: %r' % table)
     cols = [r[1] for r in conn.execute('PRAGMA table_info(%s)' % table)]
     if 'is_chaplain' not in cols:
         conn.execute('ALTER TABLE %s ADD COLUMN is_chaplain INTEGER DEFAULT 0' % table)
@@ -39,10 +43,10 @@ def ensure_users_archive(conn):
 
 
 def archive_user(conn, r):
-    """users 행을 users_archive로 백업한다."""
+    """users 행을 users_archive로 백업한다. (이미 아카이브된 id면 기존 기록 유지)"""
     ensure_users_archive(conn)
     conn.execute(
-        'INSERT OR REPLACE INTO users_archive '
+        'INSERT OR IGNORE INTO users_archive '
         '(id, name, baptism, affiliation, team, phone, discharge_date, birthday, note, prev_church, is_chaplain, archived_at) '
         'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
         (r['id'], r['name'], r['baptism'], r['affiliation'], r['team'],
@@ -56,26 +60,43 @@ def prune_expired_users(conn=None):
     """전역일이 지난 사용자를 DB에서 제거한다. (전역일 당일까지는 유지)
 
     삭제 전에 users_archive 테이블로 원본을 백업한다. 제거된 인원 수를 반환한다.
+    매 호출마다 전체 실행하지 않도록 설정(settings 'last_prune')으로 1시간 이내 재실행을 건너뛴다.
     """
     import datetime
     own = conn is None
     if own:
         conn = db()
-    today = datetime.date.today().isoformat()
-    ensure_users_archive(conn)
-    expired = conn.execute(
-        "SELECT * FROM users WHERE discharge_date IS NOT NULL AND discharge_date != '' AND discharge_date < ?",
-        (today,)).fetchall()
-    for r in expired:
-        archive_user(conn, r)
-    cur = conn.execute(
-        "DELETE FROM users WHERE discharge_date IS NOT NULL AND discharge_date != '' AND discharge_date < ?",
-        (today,))
-    removed = cur.rowcount
-    conn.commit()
-    if own:
-        conn.close()
-    return removed
+    last = None
+    now = datetime.datetime.now()
+    try:
+        last = conn.execute(
+            "SELECT value FROM settings WHERE key='last_prune'").fetchone()
+        try:
+            last_dt = datetime.datetime.strptime(last['value'], '%Y-%m-%d %H:%M:%S') if last else None
+        except (ValueError, TypeError):
+            last_dt = None
+        if last_dt is not None and (now - last_dt).total_seconds() < 3600:
+            return 0
+        today = datetime.date.today().isoformat()
+        ensure_users_archive(conn)
+        expired = conn.execute(
+            "SELECT * FROM users WHERE discharge_date IS NOT NULL AND discharge_date != '' AND discharge_date < ?",
+            (today,)).fetchall()
+        for r in expired:
+            archive_user(conn, r)
+        cur = conn.execute(
+            "DELETE FROM users WHERE discharge_date IS NOT NULL AND discharge_date != '' AND discharge_date < ?",
+            (today,))
+        removed = cur.rowcount
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES ('last_prune', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (now.strftime('%Y-%m-%d %H:%M:%S'),))
+        conn.commit()
+        return removed
+    finally:
+        if own:
+            conn.close()
 
 
 def get_user(conn, uid):
@@ -105,9 +126,11 @@ def get_all_users(conn=None):
     own = conn is None
     if own:
         conn = db()
-    rows = conn.execute('SELECT * FROM users ORDER BY id').fetchall()
-    if own:
-        conn.close()
+    try:
+        rows = conn.execute('SELECT * FROM users ORDER BY id').fetchall()
+    finally:
+        if own:
+            conn.close()
     return [dict(r) for r in rows]
 
 
@@ -146,9 +169,11 @@ def get_archived_users(conn=None):
     own = conn is None
     if own:
         conn = db()
-    rows = conn.execute('SELECT * FROM users_archive ORDER BY archived_at DESC, id').fetchall()
-    if own:
-        conn.close()
+    try:
+        rows = conn.execute('SELECT * FROM users_archive ORDER BY archived_at DESC, id').fetchall()
+    finally:
+        if own:
+            conn.close()
     return [dict(r) for r in rows]
 
 
