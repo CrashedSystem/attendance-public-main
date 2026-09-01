@@ -85,3 +85,19 @@ def api_set_newbie_days():
     d = request.get_json(silent=True) or {}
     resp, code = team_service.set_newbie_days(d.get('days'))
     return jsonify(resp), code
+
+
+@bp.route('/api/admin/sunday-detail-threshold', methods=['GET'])
+@decorators.require_admin_pin
+def api_get_sunday_detail_threshold():
+    """일요일 보고서 전체 출석자 상세 명단 표시 기준(명) 조회. 기본 30."""
+    return jsonify({'sundayDetailThreshold': team_service.get_sunday_detail_threshold()})
+
+
+@bp.route('/api/admin/sunday-detail-threshold', methods=['POST'])
+@decorators.require_admin_pin
+def api_set_sunday_detail_threshold():
+    """일요일 보고서 상세 명단 표시 기준(명) 변경. 1~999."""
+    d = request.get_json(silent=True) or {}
+    resp, code = team_service.set_sunday_detail_threshold(d.get('threshold'))
+    return jsonify(resp), code

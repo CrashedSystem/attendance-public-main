@@ -70,6 +70,7 @@
       </div>
       <div id="pin-error" class="pin-error"></div>
       <div id="pin-keypad" class="keypad"></div>
+      <button class="btn pin-back" id="btn-pin-back" type="button"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>뒤로</button>
     </div>
   </div>
 
@@ -80,7 +81,6 @@
       <div class="admin-header-right">
         <div class="admin-actions">
           <button class="btn btn-primary" id="btn-report"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20v-7M12 20V4M19 20v-11"/></svg></span>보고서 보기</button>
-          <button class="btn btn-outline" id="btn-report-a4"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></span>A4 보고서</button>
           <button class="btn btn-ghost" id="btn-export-teams"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4"/><path d="M5 20h14"/></svg></span>팀별 내보내기</button>
           <span class="admin-sep" aria-hidden="true"></span>
           <button class="btn btn-outline" id="btn-theme" aria-label="화면 모드 전환" data-theme-label=""></button>
@@ -110,33 +110,36 @@
       <button class="tab" data-tab="teams" role="tab" aria-selected="false">팀 관리</button>
       <button class="tab" data-tab="absences" role="tab" aria-selected="false">수요 결석 관리</button>
       <button class="tab" data-tab="history" role="tab" aria-selected="false">기록·통계·시간</button>
+      <button class="tab" data-tab="import" role="tab" aria-selected="false">데이터 가져오기</button>
     </div>
     <div id="tab-roster" class="tab-panel active" role="tabpanel">
       <div class="roster-toolbar">
         <button class="btn btn-primary" id="btn-add-user"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20a7 7 0 0 1 14 0"/><path d="M19 8v6m-3-3h6"/></svg></span>신규 등록</button>
         <input id="roster-search" type="text" placeholder="이름·소속·팀 검색">
-        <select id="roster-filter-aff" class="roster-select"><option value="">소속 전체</option></select>
-        <select id="roster-filter-team" class="roster-select"><option value="">팀 전체</option></select>
-        <select id="roster-filter-baptism" class="roster-select">
-          <option value="">세례 전체</option>
-          <option value="O">O (세례)</option>
-          <option value="X">X (미세례)</option>
-          <option value="blank">미기재</option>
-        </select>
-        <select id="roster-filter-chaplain" class="roster-select">
-          <option value="">군종병 전체</option>
-          <option value="1">군종병</option>
-          <option value="0">일반 신우</option>
-        </select>
-        <select id="roster-sort" class="roster-select">
-          <option value="id">No 순</option>
-          <option value="name_asc">이름 ↑</option>
-          <option value="name_desc">이름 ↓</option>
-          <option value="birthday_asc">생일 ↑</option>
-          <option value="birthday_desc">생일 ↓</option>
-          <option value="team_asc">팀 ↑</option>
-          <option value="team_desc">팀 ↓</option>
-        </select>
+        <div class="roster-filters">
+          <select id="roster-filter-aff" class="roster-select"><option value="">소속 전체</option></select>
+          <select id="roster-filter-team" class="roster-select"><option value="">팀 전체</option></select>
+          <select id="roster-filter-baptism" class="roster-select">
+            <option value="">세례 전체</option>
+            <option value="O">O (세례)</option>
+            <option value="X">X (미세례)</option>
+            <option value="blank">미기재</option>
+          </select>
+          <select id="roster-filter-chaplain" class="roster-select">
+            <option value="">군종병 전체</option>
+            <option value="1">군종병</option>
+            <option value="0">일반 신우</option>
+          </select>
+          <select id="roster-sort" class="roster-select">
+            <option value="id">No 순</option>
+            <option value="name_asc">이름 ↑</option>
+            <option value="name_desc">이름 ↓</option>
+            <option value="birthday_asc">생일 ↑</option>
+            <option value="birthday_desc">생일 ↓</option>
+            <option value="team_asc">팀 ↑</option>
+            <option value="team_desc">팀 ↓</option>
+          </select>
+        </div>
       </div>
       <div id="roster-table-wrap" class="table-wrap"></div>
     </div>
@@ -196,6 +199,13 @@
           <span class="team-admin-hint" id="tm-newbie-hint"></span>
         </div>
         <div class="team-admin-row">
+          <span class="team-admin-label">일요일 상세 명단 기준</span>
+          <input id="tm-sunday-threshold" type="number" min="1" max="999" value="30">
+          <span>명</span>
+          <button class="btn btn-primary" id="btn-sunday-threshold">저장</button>
+          <span class="team-admin-hint" id="tm-sunday-hint"></span>
+        </div>
+        <div class="team-admin-row">
           <span class="team-admin-label">팀 삭제</span>
           <select id="tm-delete-team" class="input-select"></select>
           <button class="btn btn-danger" id="btn-team-delete">삭제</button>
@@ -236,6 +246,27 @@
         </div>
       </div>
       <div id="h-list" class="table-wrap"></div>
+    </div>
+    <div id="tab-import" class="tab-panel" role="tabpanel">
+      <div class="team-admin">
+        <div class="team-admin-row">
+          <span class="team-admin-label">엑셀 템플릿</span>
+          <button class="btn btn-primary" id="btn-import-template">템플릿 다운로드</button>
+          <span class="team-admin-hint" id="imp-template-hint">명단·출석 시트가 있는 .xlsx를 받아 채워주세요</span>
+        </div>
+        <div class="team-admin-row">
+          <span class="team-admin-label">파일 선택</span>
+          <label class="btn btn-outline file-btn" for="imp-file">
+            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><polyline points="1 9 12 4 23 9"/><path d="M2 14h6l2 3h4l2-3h6"/></svg></span>파일 선택
+            <input id="imp-file" type="file" accept=".xlsx,.csv" hidden>
+          </label>
+          <span id="imp-file-name" class="imp-file-name">선택된 파일 없음</span>
+          <button class="btn btn-primary" id="btn-imp-preview">미리보기</button>
+          <button class="btn btn-primary" id="btn-imp-apply" disabled>적용</button>
+          <span class="team-admin-hint" id="imp-file-hint"></span>
+        </div>
+        <div id="imp-preview" class="imp-preview" hidden></div>
+      </div>
     </div>
   </div>
 
@@ -314,6 +345,7 @@
 <script src="/static/js/admin/team.js"></script>
 <script src="/static/js/admin/absence.js"></script>
 <script src="/static/js/admin/history.js"></script>
+<script src="/static/js/admin/import.js"></script>
 
 <!-- 컴포넌트 -->
 <script src="/static/js/components/report.js"></script>

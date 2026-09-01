@@ -18,7 +18,7 @@ start "kiosk-server" /min pythonw app.py
 set tries=0
 :wait
 set /a tries+=1
->nul 2>&1 powershell -Command "(Invoke-WebRequest -Uri 'http://localhost:5000' -UseBasicParsing -TimeoutSec 3)"
+>nul 2>&1 powershell -Command "(Invoke-WebRequest -Uri 'http://localhost:8000' -UseBasicParsing -TimeoutSec 3)"
 if not errorlevel 1 goto up
 if %tries% geq 30 goto fail
 ping -n 2 127.0.0.1 >nul
@@ -28,15 +28,15 @@ goto wait
 echo [2/2] 전체화면으로 브라우저를 시작합니다...
 if defined CHROME goto launch_chrome
 if defined EDGE goto launch_edge
-start "" http://localhost:5000
+start "" http://localhost:8000
 goto done
 
 :launch_chrome
-start "" "%CHROME%" --kiosk --start-fullscreen --no-first-run --disable-session-crashed-bubble "--user-data-dir=%~dp0.chrome_profile" http://localhost:5000
+start "" "%CHROME%" --kiosk --start-fullscreen --no-first-run --disable-session-crashed-bubble "--user-data-dir=%~dp0.chrome_profile" http://localhost:8000
 goto done
 
 :launch_edge
-start "" "%EDGE%" --kiosk --start-fullscreen --no-first-run --disable-session-crashed-bubble "--user-data-dir=%~dp0.chrome_profile" http://localhost:5000
+start "" "%EDGE%" --kiosk --start-fullscreen --no-first-run --disable-session-crashed-bubble "--user-data-dir=%~dp0.chrome_profile" http://localhost:8000
 goto done
 
 :fail

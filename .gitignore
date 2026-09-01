@@ -1,2 +1,8 @@
 주일/.chrome_profile/
 주일/__pycache__/
+주일/**/__pycache__/
+*.pyc
+주일/_dbg*.xlsx
+주일/_tpl_*.xlsx
+주일/data/통계_dev/
+주일/data/통계_dev_png/

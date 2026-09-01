@@ -42,6 +42,11 @@
         window.$('tm-newbie-days').value = res.days;
         window.$('tm-newbie-hint').textContent = '비고의 새신우 태그가 ' + res.days + '일 후 자동 삭제됩니다';
       });
+    window.api.getSundayDetailThreshold()
+      .then(function (res) {
+        window.$('tm-sunday-threshold').value = res.sundayDetailThreshold;
+        window.$('tm-sunday-hint').textContent = '일요일 전체 출석자가 ' + res.sundayDetailThreshold + '명 미만이면 통합 보고서에 상세 명단을 표시합니다';
+      });
   }
 
   /** 팀/소속 변경 후 명단 및 드롭다운 갱신. */
@@ -158,6 +163,21 @@
     });
   }
 
+  /** 일요일 상세 명단 표시 기준 설정. */
+  function onSundayThreshold() {
+    var threshold = parseInt(window.$('tm-sunday-threshold').value, 10);
+    if (!threshold || threshold < 1 || threshold > 999) { window.dialogManager.alert('1~999 사이의 숫자를 입력하세요.', { title: '일요일 상세 명단 기준' }); return; }
+    window.dialogManager.confirm('일요일 전체 출석자가 ' + threshold + '명 미만이면 통합 보고서에 상세 명단을 표시합니다. 변경하시겠습니까?', { title: '일요일 상세 명단 기준', okLabel: '변경' }, function () {
+      window.api.setSundayDetailThreshold(threshold)
+        .then(function (res) {
+          if (res.ok) {
+            window.dialogManager.toast('일요일 상세 명단 기준이 ' + res.sundayDetailThreshold + '명으로 변경되었습니다.');
+            loadTab();
+          } else window.dialogManager.alert(res.msg || '저장 실패', { title: '일요일 상세 명단 기준' });
+        });
+    });
+  }
+
   /**
    * 모듈 초기화 — 팀/소속 관리 버튼 이벤트 등록.
    */
@@ -169,6 +189,7 @@
     window.$('btn-team-create').addEventListener('click', onTeamCreate);
     window.$('btn-team-delete').addEventListener('click', onTeamDelete);
     window.$('btn-newbie-days').addEventListener('click', onNewbieDays);
+    window.$('btn-sunday-threshold').addEventListener('click', onSundayThreshold);
   }
 
   window.teamManager = {

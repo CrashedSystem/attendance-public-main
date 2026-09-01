@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import math
+import glob
 import datetime
 import sqlite3
 
@@ -55,6 +57,20 @@ def _load_users(conn, mode, team_filter=None):
 
 
 NEWBIE_DAYS = 30  # 새신우 유지 기간 기본값(일). settings의 'newbie_days'로 조정 가능
+SUNDAY_DETAIL_THRESHOLD = 30  # 일요일 전체 출석자 상세 명단 표시 기준값(명). settings의 'sunday_detail_threshold'로 조정 가능
+
+
+def _sunday_detail_threshold():
+    """일요일 통합 보고서에서 전체 출석자 상세 명단을 표시할 인원 기준.
+    전체 출석자가 이 값 미만이면 상세 명단을 표시한다. 기본 30."""
+    conn = _db()
+    row = conn.execute("SELECT value FROM settings WHERE key='sunday_detail_threshold'").fetchone()
+    conn.close()
+    try:
+        v = int(row['value']) if row else SUNDAY_DETAIL_THRESHOLD
+    except Exception:
+        v = SUNDAY_DETAIL_THRESHOLD
+    return max(1, min(999, v))
 
 
 def _newbie_days():
@@ -379,6 +395,122 @@ def _safe_filename(name):
     return re.sub(r'[\\/:*?"<>|]', '_', str(name)).strip() or '이름없음'
 
 
+_DETAIL_CSS = (
+    "* { box-sizing: border-box; }\n"
+    "body { font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif; background:#f3f4f6; "
+    "margin:0; padding:20px 14px; color:#1f2937; -webkit-font-smoothing:antialiased; }\n"
+    ".sheet { background:#fff; max-width:1100px; margin:0 auto; padding:22px 26px 26px; "
+    "border-radius:12px; box-shadow:0 1px 10px rgba(17,24,39,.06); }\n"
+    "h1 { text-align:center; margin:0 0 4px; font-size:20px; font-weight:800; color:#111827; letter-spacing:-.01em; }\n"
+    ".sub { text-align:center; color:#9ca3af; margin:0; font-size:11px; letter-spacing:.02em; }\n"
+    "hr.topline { border:0; border-top:1px solid #eef0f3; margin:12px 0 16px; }\n"
+    ".card { margin-bottom:12px; background:#fff; border:1px solid #eef0f3; border-radius:12px; padding:14px 16px; }\n"
+    ".card h2 { font-size:13px; font-weight:700; margin:0 0 10px; color:#111827; display:flex; align-items:center; gap:8px; }\n"
+    ".card h2::before { content:''; width:4px; height:14px; border-radius:2px; background:#465aa9; flex:none; }\n"
+    "table.abs { width:100%; border-collapse:collapse; font-size:11px; }\n"
+    "table.abs th { background:#f8f9fa; border-bottom:1px solid #e5e7eb; padding:6px 10px; text-align:center; "
+    "font-size:10px; font-weight:600; color:#6b7280; }\n"
+    "table.abs td { border-bottom:1px solid #f0f1f3; padding:6px 10px; text-align:center; color:#374151; }\n"
+    "table.abs tr:last-child td { border-bottom:0; }\n"
+    "tr.w1 td { background:#fffaf5; } tr.w2 td { background:#fef4f4; } tr.w3 td { background:#fdf5ff; } tr.w4 td { background:#f6f4fe; }\n"
+    "tr.unauth td { background:#fee2e2 !important; color:#991b1b; font-weight:700; }\n"
+    ".badge { display:inline-block; min-width:32px; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:700; text-align:center; }\n"
+    ".badge.b1 { background:#fdeedb; color:#c2571b; } .badge.b2 { background:#fce4e4; color:#b91c1c; }\n"
+    ".badge.b3 { background:#fdebf4; color:#a21caf; } .badge.b4 { background:#ece9fb; color:#6d28d9; }\n"
+    ".wtag { display:inline-block; padding:2px 8px; margin:1px 2px; border-radius:999px; background:#e9edf9; "
+    "color:#3f53a6; font-size:9px; font-weight:600; white-space:nowrap; }\n"
+    ".wflow { margin:0 3px; color:#c3c8cf; font-weight:700; font-size:10px; }\n"
+    ".nophone { color:#c3c8cf; }\n"
+    ".empty { text-align:center; color:#9ca3af; margin:6px 0; font-size:11px; }\n"
+)
+
+
+def _detail_html(title, sub, h2, ths_html, rows_html):
+    """분리 캡처용 명단 페이지 하나를 완전한 HTML로 생성."""
+    rows_html = rows_html if rows_html else '<tr><td colspan="9" class="empty">명단이 없습니다.</td></tr>'
+    return (
+        '<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        '<title>%s</title>\n<style>\n%s</style>\n</head>\n<body>\n'
+        '<div class="sheet">\n<h1>%s</h1>\n<p class="sub">%s</p>\n<hr class="topline">\n'
+        '<div class="card">\n<h2>%s</h2>\n<div class="table-wrap">\n'
+        '<table class="abs">\n%s\n%s\n</table>\n</div>\n</div>\n</div>\n</body>\n</html>'
+    ) % (title, _DETAIL_CSS, title, sub, h2, ths_html, rows_html)
+
+
+def _build_detail_pages(date_str, mode, env='commercial'):
+    """출석자 명단·연속 미출석자 명단을 별도 사본으로 분리 생성 (서비스일)."""
+    if not _is_service_date(date_str, mode):
+        return []
+    conn = _db()
+    users = _load_users(conn, mode)
+    stats, date_map = _build_stats(conn, users, mode, env)
+    last_date = stats['dates'][-1] if stats['dates'] else ''
+    absent_list, _ = _build_absent(conn, users, date_map, env, mode=mode)
+    attendees = _build_team_attendees(conn, mode, last_date, env)
+    conn.close()
+    stamp = date_str.replace('-', '')
+    out_dir = os.path.join(_archive_dir(env), '명단')
+    os.makedirs(out_dir, exist_ok=True)
+    mode_label = MODE_SHEETS.get(mode, '')
+    rng = '%s ~ %s' % (stats['dates'][0] if stats['dates'] else '-',
+                       stats['dates'][-1] if stats['dates'] else '-')
+    written = []
+
+    rows = []
+    for idx, a in enumerate(attendees, 1):
+        rows.append(
+            '<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (
+                idx, a['name'], a['aff'],
+                a['team'] or '-',
+                a['phone'] or '<span class="nophone">-</span>',
+                a['time'] or '-'))
+    ths = '<tr><th>No</th><th>이름</th><th>소속</th><th>팀</th><th>휴대폰</th><th>출석시각</th></tr>'
+    html = _detail_html('출석자 명단',
+                        '%s 예배 · %s · 총 %d명' % (mode_label, rng, len(attendees)),
+                        '출석자 명단 · 총 %d명' % len(attendees),
+                        ths, '\n'.join(rows))
+    path = os.path.join(out_dir, '출석자_명단_%s.html' % stamp)
+    open(path, 'w', encoding='utf-8').write(html)
+    written.append(path)
+
+    badges = {1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4'}
+    use_reason = bool(absent_list) and 'reason' in (absent_list[0] if absent_list else {})
+    flow_col = '미출석 사유' if use_reason else '팀'
+    rows = []
+    for a in absent_list:
+        w = a.get('w', 1)
+        if use_reason:
+            flow = []
+            for s in str(a.get('reason', '')).split('→'):
+                s = s.strip()
+                if s:
+                    flow.append('<span class="wtag">%s</span>' % s)
+            flow_html = '<span class="wflow">→</span>'.join(flow) if flow else '<span class="wtag">-</span>'
+            flow_col = '미출석 사유'
+        else:
+            flow_html = a.get('team', '') or '-'
+            flow_col = '팀'
+        rows.append(
+            '<tr class="w%d%s"><td><span class="badge %s">%d주</span></td>'
+            '<td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (
+                w, ' unauth' if a.get('unauth') else '', badges.get(w, 'b1'), w,
+                a.get('name', ''),
+                a.get('aff', '') or '-',
+                flow_html,
+                a.get('phone', '') or '<span class="nophone">-</span>'))
+    ths = ('<tr><th>미출석</th><th>이름</th><th>소속</th><th>%s</th><th>휴대폰</th></tr>' % flow_col)
+    html = _detail_html('연속 미출석자 명단',
+                        '%s 예배 · %s · 총 %d명' % (mode_label, rng, len(absent_list)),
+                        '연속 미출석자 명단 (1~4주) · 총 %d명' % len(absent_list),
+                        ths, '\n'.join(rows))
+    path = os.path.join(out_dir, '미출석자_명단_%s.html' % stamp)
+    open(path, 'w', encoding='utf-8').write(html)
+    written.append(path)
+
+    return written
+
+
 def _png_dir(env='commercial'):
     """배포용 PNG 저장 폴더 (예: data/통계_commercial_png)"""
     return os.path.join(BASE_DIR, 'data', '통계_%s_png' % env)
@@ -400,8 +532,20 @@ def _render_html_to_png(html_path, png_path):
         # device_scale_factor=3 → A4 기준 약 2382×3369px (≈288dpi)로 선명하게 캡처
         page = b.new_page(viewport={'width': 794, 'height': 1123}, device_scale_factor=3)
         page.goto('file:///' + os.path.abspath(html_path).replace('\\', '/'))
+        # PNG 캡처에는 닫기(X) 버튼 제외
+        page.add_style_tag(content='.close-rpt { display: none !important; }')
         page.wait_for_timeout(1500)
-        page.screenshot(path=png_path, full_page=True)
+        total = page.evaluate('document.documentElement.scrollHeight')
+        pages = max(1, math.ceil(total / 1123))
+        page.wait_for_timeout(200)
+        for i in range(pages):
+            page.evaluate('window.scrollTo(0, %d)' % (i * 1123))
+            page.wait_for_timeout(150)
+            out_path = png_path
+            if i > 0:
+                base, ext = os.path.splitext(png_path)
+                out_path = '%s_p%d%s' % (base, i + 1, ext)
+            page.screenshot(path=out_path, full_page=False)
         return True
     except Exception:
         return False
@@ -440,8 +584,24 @@ def _render_pngs_shared(html_png_pairs):
             try:
                 page = b.new_page(viewport={'width': 794, 'height': 1123}, device_scale_factor=3)
                 page.goto('file:///' + os.path.abspath(html_path).replace('\\', '/'))
+                # PNG 캡처에는 닫기(X) 버튼 제외
+                page.add_style_tag(content='.close-rpt { display: none !important; }')
                 page.wait_for_timeout(1000)
-                page.screenshot(path=png_path, full_page=True)
+                # 내용이 A4(1123px)를 넘으면 _p2, _p3 … 로 페이지 분할 캡처
+                total = page.evaluate('document.documentElement.scrollHeight')
+                pages = max(1, math.ceil(total / 1123))
+                base, ext = os.path.splitext(png_path)
+                # 이전 분할 잔여 파일(페이지가 줄어든 경우) 제거
+                for old in glob.glob(base + '_p[0-9]*' + ext):
+                    try:
+                        os.remove(old)
+                    except OSError:
+                        pass
+                for i in range(pages):
+                    page.evaluate('window.scrollTo(0, %d)' % (i * 1123))
+                    page.wait_for_timeout(150)
+                    out_path = png_path if i == 0 else '%s_p%d%s' % (base, i + 1, ext)
+                    page.screenshot(path=out_path, full_page=False)
                 page.close()
             except Exception:
                 pass
@@ -495,6 +655,14 @@ def render_reports_to_png(mode=None, env='commercial', date_str=None):
                                  '출석_그래프_%s.html' % _safe_filename(team))
         pair = (team_html, os.path.join(team_png_dir, '출석_그래프_%s.png' % _safe_filename(team)))
         pairs.append(pair)
+    # 분리 캡처용 명단 보고서 (출석자/미출석자)
+    detail_dir = os.path.join(_archive_dir(env), '명단')
+    detail_png_dir = os.path.join(_png_dir(env), '명단')
+    os.makedirs(detail_png_dir, exist_ok=True)
+    for label in ('출석자', '미출석자'):
+        detail_html = os.path.join(detail_dir, '%s_명단_%s.html' % (label, stamp))
+        if os.path.isfile(detail_html):
+            pairs.append((detail_html, os.path.join(detail_png_dir, '%s_명단_%s.png' % (label, stamp))))
     _render_pngs_shared(pairs)
 
 
@@ -560,10 +728,6 @@ def _render_report_for_team(date_str, mode, env='commercial', team_filter=None, 
         lambda m: '<div class="stat">\n    ' + stat_html + '\n  </div>',
         html, count=1, flags=re.S)
 
-    html = re.sub(
-        r'연속 미출석자 명단 \(1~4주\) · 총 \d+명',
-        '연속 미출석자 명단 (1~4주) · 총 %d명' % len(absent_list), html, count=1)
-
     if month:
         html = re.sub(
             r'이달의 생일자 \(\d+월\) · 총 \d+명',
@@ -587,10 +751,10 @@ def _render_report_for_team(date_str, mode, env='commercial', team_filter=None, 
             r'<h2>팀별 출석 인원 \(이번 주\)</h2>',
             '<h2>팀 출석자 상세 명단 (%s) · 총 %d명</h2>' % (team_filter, len(team_attendees)), html, count=1)
 
-        # 수요일 모드: 팀별 보고서에도 출석자 전체 상세 명단 표시
+        # 팀 보고서: 팀 인원 요약 대신 출석자 상세 명단 표시
         html = html.replace(TEAM_SUMMARY_SCRIPT, ATTENDEE_DETAIL_SCRIPT)
-    elif mode == 'wednesday':
-        # 수요일 모드 기본 보고서: 팀 집계 대신 전체 출석자 상세 명단 표시
+    elif mode == 'sunday' and len(team_attendees) < _sunday_detail_threshold():
+        # 일요일 모드라도 전체 출석자가 기준 미만이면 전체 출석자 상세 명단 표시
         html = re.sub(
             r'<h2>팀별 출석 인원 \(이번 주\)</h2>',
             '<h2>전체 출석자 상세 명단 · 총 %d명</h2>' % len(team_attendees), html, count=1)
@@ -651,6 +815,9 @@ def refresh_web_report(mode=None, env='commercial', date_str=None):
     team_list = [r['team'] for r in teams_rows]
     for idx, team in enumerate(team_list, start=1):
         _render_report_for_team(date_str, mode, env, team_filter=team, team_index=idx)
+
+    # 3. 출석자·미출석자 명단을 별도 사본으로 분리 생성
+    _build_detail_pages(date_str, mode, env)
 
     # 3. 팀 폴더 정리: 날짜별 하위 폴더 내 현재 존재하지 않는 팀 파일 및 구 번호식 파일 제거
     team_dir = os.path.join(_archive_dir(env), 'teams')

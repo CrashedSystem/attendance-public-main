@@ -2,7 +2,6 @@
 """보고서/내보내기/종료 라우트.
 
 - GET  /api/report              - 웹 보고서(그래프 HTML) 열기
-- GET  /api/report/a4           - A4 대응 보고서 열기
 - GET  /api/admin/report        - 지정 날짜 기준 관리자 보고서
 - POST /api/admin/export-teams  - 팀별 보고서 HTML/PNG 내보내기
 - POST /api/admin/shutdown      - 웹 보고서 저장 후 서버 종료
@@ -58,18 +57,6 @@ def download_report():
         datetime.date.fromisoformat(date_str)
     except ValueError:
         date_str = None
-    mode = _resolve_mode((request.args.get('mode') or '').strip())
-    try:
-        report_service.safe_refresh(mode, SERVER_ENV)
-    except Exception as e:
-        return jsonify({'ok': False, 'msg': '보고서 생성 실패: %s' % e}), 500
-    return send_from_directory(BASE_DIR, '출석_그래프_%s.html' % SERVER_ENV)
-
-
-@bp.route('/api/report/a4')
-@decorators.require_admin_pin
-def download_a4_report():
-    """웹 보고서를 갱신 후 띄운다."""
     mode = _resolve_mode((request.args.get('mode') or '').strip())
     try:
         report_service.safe_refresh(mode, SERVER_ENV)

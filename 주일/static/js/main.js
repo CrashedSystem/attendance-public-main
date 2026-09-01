@@ -26,6 +26,7 @@
     window.teamManager.init();     // 팀/소속 버튼
     window.absenceManager.init();  // 결석 탭
     window.historyManager.init();  // 기록/시간 탭
+    window.importManager.init();   // 데이터 가져오기 탭
 
     // 컴포넌트
     window.tabsManager.init();

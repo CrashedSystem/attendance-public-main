@@ -71,6 +71,16 @@
   }
 
   /**
+   * PIN 화면 닫고 메인으로 복귀 (입력 값 초기화).
+   */
+  function cancelLogin() {
+    pinValue = '';
+    window.$('pin-error').textContent = '';
+    refreshPin();
+    window.screenManager.show('screen-main');
+  }
+
+  /**
    * 모듈 초기화 — admin-zone 클릭 + admin-back 클릭 + 키패드 생성 등록.
    */
   function init() {
@@ -81,6 +91,12 @@
       window.$('pin-error').textContent = '';
       refreshPin();
       window.screenManager.show('screen-admin-login');
+    });
+    window.$('btn-pin-back').addEventListener('click', cancelLogin);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && window.$('screen-admin-login').classList.contains('active')) {
+        cancelLogin();
+      }
     });
     window.$('btn-admin-back').addEventListener('click', function () {
       window.searchManager.clear();

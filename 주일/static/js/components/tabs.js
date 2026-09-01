@@ -28,6 +28,7 @@
     else if (tab === 'bulk') window.bulkManager.load();
     else if (tab === 'absences') window.absenceManager.loadTab();
     else if (tab === 'history') window.historyManager.loadTab();
+    else if (tab === 'import') window.importManager.loadTab();
     else window.attendanceManager.load();
   }
 

@@ -6,7 +6,7 @@
 
   /**
    * 보고서 HTML을 PIN 헤더와 함께 가져와 새 탭에서 연다.
-   * @param {string} path - 보고서 경로 (/api/report, /api/report/a4)
+   * @param {string} path - 보고서 경로 (/api/report)
    */
   function openReport(path) {
     window.api.getReport(path)
@@ -26,11 +26,6 @@
   /** 종합 보고서 열기. */
   function onReport() {
     openReport('/api/report');
-  }
-
-  /** A4 보고서 열기. */
-  function onReportA4() {
-    openReport('/api/report/a4');
   }
 
   /** 팀별 보고서 내보내기. */
@@ -66,7 +61,6 @@
    */
   function init() {
     window.$('btn-report').addEventListener('click', onReport);
-    window.$('btn-report-a4').addEventListener('click', onReportA4);
     window.$('btn-export-teams').addEventListener('click', onExportTeams);
     window.$('btn-shutdown').addEventListener('click', onShutdown);
   }

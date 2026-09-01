@@ -269,3 +269,37 @@ def set_newbie_days(days):
     conn.close()
     safe_refresh()
     return ({'ok': True, 'days': v}, 200)
+
+
+DEFAULT_SUNDAY_DETAIL_THRESHOLD = 30
+
+
+def get_sunday_detail_threshold():
+    """일요일 보고서 전체 출석자 상세 명단 표시 기준값(명). 기본 30, 범위 1~999."""
+    conn = db()
+    raw = get_setting(conn, 'sunday_detail_threshold', None)
+    conn.close()
+    try:
+        v = int(raw) if raw else DEFAULT_SUNDAY_DETAIL_THRESHOLD
+    except Exception:
+        v = DEFAULT_SUNDAY_DETAIL_THRESHOLD
+    return max(1, min(999, v))
+
+
+def set_sunday_detail_threshold(value):
+    """일요일 보고서 상세 명단 표시 기준값(명) 변경. 1~999.
+
+    반환: (응답 dict, HTTP 상태 코드)
+    """
+    try:
+        v = int(value)
+    except (TypeError, ValueError):
+        return ({'ok': False, 'msg': '숫자를 입력하세요.'}, 400)
+    if not (1 <= v <= 999):
+        return ({'ok': False, 'msg': '1~999 사이의 값으로 입력하세요.'}, 400)
+    conn = db()
+    set_setting(conn, 'sunday_detail_threshold', str(v))
+    conn.commit()
+    conn.close()
+    safe_refresh()
+    return ({'ok': True, 'sundayDetailThreshold': v}, 200)

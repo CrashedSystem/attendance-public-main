@@ -11,7 +11,8 @@ from flask import Flask, send_from_directory
 from config import BASE_DIR
 from models.database import init_db
 from routes import (admin_absence, admin_attendance, admin_auth,
-                    admin_team, admin_time, admin_user, public, report)
+                    admin_import, admin_team, admin_time, admin_user,
+                    public, report)
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
@@ -24,6 +25,7 @@ app.register_blueprint(admin_auth.bp)
 app.register_blueprint(admin_user.bp)
 app.register_blueprint(admin_attendance.bp)
 app.register_blueprint(admin_team.bp)
+app.register_blueprint(admin_import.bp)
 app.register_blueprint(admin_absence.bp)
 app.register_blueprint(admin_time.bp)
 app.register_blueprint(report.bp)
@@ -44,4 +46,4 @@ def index():
 init_db()
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    app.run(host='127.0.0.1', port=8000, debug=False)

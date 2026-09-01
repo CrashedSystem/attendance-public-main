@@ -169,6 +169,14 @@
     return request('/api/admin/newbie-days', { method: 'POST', body: { days: days } });
   }
 
+  /** 일요일 상세 명단 표시 기준(명) 조회 */
+  function getSundayDetailThreshold() { return request('/api/admin/sunday-detail-threshold'); }
+
+  /** 일요일 상세 명단 표시 기준(명) 설정 */
+  function setSundayDetailThreshold(threshold) {
+    return request('/api/admin/sunday-detail-threshold', { method: 'POST', body: { threshold: threshold } });
+  }
+
   /* ---------- 관리자 : 기록/통계 ---------- */
 
   /** 지정 날짜 출석 기록 목록 */
@@ -198,9 +206,6 @@
 
   /** 종합 보고서 */
   function report() { return request('/api/report'); }
-
-  /** A4 보고서 */
-  function reportA4() { return request('/api/report/a4'); }
 
   /** 팀별 보고서 내보내기 */
   function exportTeams() { return request('/api/admin/export-teams', { method: 'POST' }); }
@@ -234,13 +239,14 @@
     teamDelete: teamDelete,
     getNewbieDays: getNewbieDays,
     setNewbieDays: setNewbieDays,
+    getSundayDetailThreshold: getSundayDetailThreshold,
+    setSundayDetailThreshold: setSundayDetailThreshold,
     attendanceList: attendanceList,
     addHistAttendance: addHistAttendance,
     deleteHistAttendance: deleteHistAttendance,
     getTime: getTime,
     syncTime: syncTime,
     report: report,
-    reportA4: reportA4,
     exportTeams: exportTeams,
     shutdown: shutdown
   };
