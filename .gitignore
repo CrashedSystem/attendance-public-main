@@ -6,3 +6,11 @@
 주일/_tpl_*.xlsx
 주일/data/통계_dev/
 주일/data/통계_dev_png/
+주일/backups/
+주일/*.log
+주일/build/
+주일/dist/
+주일/*.spec
+주일/*.db
+주일/*.db.*
+주일/data/*.db

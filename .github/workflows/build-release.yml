@@ -1,0 +1,66 @@
+name: build-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '배포 버전 (예: v0.1.0). 태그가 없으면 자동 생성'
+        required: true
+        default: 'v0.1.0'
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존 패키지 설치
+        run: |
+          pip install flask openpyxl playwright pyinstaller
+
+      - name: Chromium 설치 (exe 안에 포함시킬 브라우저)
+        run: playwright install chromium
+
+      - name: kiosk.exe 빌드 (DB 미포함 — 최초 실행 시 빈 DB 자동 생성)
+        working-directory: 주일
+        run: |
+          pyinstaller --noconfirm --onefile --noconsole --name kiosk \
+            --add-data "static;static" \
+            --add-data "report_template.html;." \
+            --hidden-import "playwright.sync_api" \
+            --hidden-import "playwright.async_api" \
+            --add-binary "$LOCALAPPDATA/ms-playwright;ms-playwright" \
+            kiosk_main.py
+
+      - name: 배포 파일 모음
+        run: |
+          mkdir -p release
+          cp  주일/dist/kiosk.exe     release/kiosk.exe
+          cp  주일/start_kiosk.bat    release/start_kiosk.bat
+          cp  주일/restore_db.bat     release/restore_db.bat
+          cp  사용설명서.html          release/사용설명서.html
+
+      - name: GitHub Release 생성
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+          fi
+          gh release create "$VERSION" release/* \
+            --title "출석 키오스크 $VERSION" \
+            --notes "**DB 미포함 배포입니다.**\
+            최초 실행 시 빈 DB(군종.db)가 자동 생성되고, 시작마다 backups/ 폴더에 .db.bak 자동 백업됩니다.\
+            사용법: kiosk.exe 하나만 실행. Chromium(PNG 보고서) 포함." \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

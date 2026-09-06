@@ -9,13 +9,17 @@ import datetime
 from models.database import db
 from models.settings import MODE_WEEKDAY, is_service_date as _is_service_date_model
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, '군종.db')
-REPORT_PATH = os.path.join(BASE_DIR, '출석_그래프_%s.html')
-REPORT_ARCHIVE_DIR = os.path.join(BASE_DIR, 'data', '통계_%s')
+from config import BASE_DIR as _OUT_BASE, RES_DIR
+
+# 생성물(보고서 html/png)은 데이터 폴더(EXE 옆)에 저장되고,
+# 읽기 전용 템플릿은 EXE 내장 폴더에서 로드한다.
+BASE_DIR = _OUT_BASE
+DB_PATH = os.path.join(_OUT_BASE, '군종.db')
+REPORT_PATH = os.path.join(_OUT_BASE, '출석_그래프_%s.html')
+REPORT_ARCHIVE_DIR = os.path.join(_OUT_BASE, 'data', '통계_%s')
 # 생성 결과를 덮어쓰지 않는 별도 템플릿. (출력 파일을 자기 자신 템플릿으로 쓰면
 # 모드 전환 시 치환 마커가 소실되어 수요일 통계가 일부만 표시되는 버그 발생)
-TEMPLATE_PATH = os.path.join(BASE_DIR, 'report_template.html')
+TEMPLATE_PATH = os.path.join(RES_DIR, 'report_template.html')
 
 logger = logging.getLogger(__name__)
 

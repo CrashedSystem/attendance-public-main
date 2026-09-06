@@ -46,38 +46,44 @@
 <body>
 <div class="sheet">
 <h1>출석 현황</h1>
-<p class="sub">수요일 예배 · 2026-07-15 ~ 2026-08-26 · 총 72건</p>
+<p class="sub">일요일 예배 · 2026-07-05 ~ 2026-08-30 · 총 433건</p>
 
 <div class="card">
   <h2>출석 통계 요약</h2>
   <div class="stat">
-    <div class="box"><b>2026-08-26 18명</b><span>이번 주 출석</span></div>
-    <div class="box fade"><b>2026-08-12 18명</b><span>저번 주 출석</span></div>
-    <div class="box"><b>4</b><span>주(일) 수</span></div>
-    <div class="box"><b>18.0</b><span>평균 출석/주</span></div>
-    <div class="box"><b>2026-07-15 18명</b><span>최다 출석</span></div>
-    <div class="box down"><b>2026-08-26 0명 (0.0%)</b><span>최근 변화 (이전 주 대비)</span></div>
+    <div class="box"><b>2026-08-30 1명</b><span>이번 주 출석</span></div>
+    <div class="box fade"><b>2026-08-23 54명</b><span>저번 주 출석</span></div>
+    <div class="box"><b>9</b><span>주(일) 수</span></div>
+    <div class="box"><b>48.1</b><span>평균 출석/주</span></div>
+    <div class="box"><b>2026-07-05 54명</b><span>최다 출석</span></div>
+    <div class="box down"><b>2026-08-30 -53명 (-98.1%)</b><span>최근 변화 (이전 주 대비)</span></div>
   </div>
 </div>
 
 <div class="card">
-  <h2>전체 출석자 상세 명단 · 총 18명</h2>
+  <h2>팀별 출석 인원 (이번 주)</h2>
   <div class="table-wrap" id="team-wrap"></div>
 </div>
 
-
+<div class="card">
+  <h2>새신우 현황 · 총 0명</h2>
+  <div class="table-wrap" id="newbie-wrap"></div>
+</div>
 
 <div class="card">
-  <h2>연속 미출석자 명단 (1~4주) · 총 2명</h2>
+  <h2>연속 미출석자 명단 (1~4주) · 총 51명</h2>
   <div class="table-wrap" id="abs-wrap"></div>
 </div>
 
-
+<div class="card">
+  <h2>이달의 생일자 (8월) · 총 5명</h2>
+  <div class="table-wrap" id="bday-wrap"></div>
+</div>
 </div>
 
 
 <script>
-const C = {"dates": ["2026-07-15", "2026-07-29", "2026-08-12", "2026-08-26"], "counts": [18, 18, 18, 18], "deltas": [null, 0, 0, 0], "rates": [null, 0.0, 0.0, 0.0], "total": 72, "days": 4, "avg": 18.0, "thiswk": "2026-08-26 18명", "lastwk": "2026-08-12 18명", "maxd": "2026-07-15 18명", "absent": [{"name": "박예성", "aff": "76정비대", "phone": "010-0000-0045", "w": 4, "nb": false, "reason": "[1주차] - → [2주차] - → [3주차] - → [4주차] -", "unauth": true}, {"name": "송다훈", "aff": "정보대", "phone": "010-0000-0018", "w": 4, "nb": false, "reason": "[1주차] - → [2주차] - → [3주차] - → [4주차] 훈련", "unauth": true}], "bday": [{"name": "이명준", "aff": "102직할", "team": "기쁨팀(최다은)", "phone": "010-0000-0002", "bday": "8월 3일", "day": 3}, {"name": "윤지안", "aff": "방공", "team": "사랑팀(강세아&박주호)", "phone": "010-0000-0008", "bday": "8월 8일", "day": 8}, {"name": "유시온", "aff": "군사경찰", "team": "기쁨팀(최다은)", "phone": "010-0000-0025", "bday": "8월 17일", "day": 17}, {"name": "강바울", "aff": "공병", "team": "온유팀(오새벽&서하늘)", "phone": "010-0000-0048", "bday": "8월 22일", "day": 22}, {"name": "배성민", "aff": "군지대", "team": "충성팀(윤시온&김나래)", "phone": "010-0000-0036", "bday": "8월 22일", "day": 22}], "teams": [{"team": "기쁨팀(최다은)", "count": 4}, {"team": "온유팀(오새벽&서하늘)", "count": 3}, {"team": "인내팀(한결민)", "count": 3}, {"team": "충성팀(윤시온&김나래)", "count": 3}, {"team": "화평팀(이하람&정미경)", "count": 3}, {"team": "사랑팀(강세아&박주호)", "count": 2}], "team_attendees": [{"name": "최우성", "aff": "102군지", "team": "사랑팀(강세아&박주호)", "phone": "010-0000-0004", "time": "09:28:00"}, {"name": "김하늘", "aff": "102직할", "team": "기쁨팀(최다은)", "phone": "010-0000-0001", "time": "09:07:00"}, {"name": "노준희", "aff": "1대대", "team": "충성팀(윤시온&김나래)", "phone": "010-0000-0028", "time": "09:16:00"}, {"name": "심재혁", "aff": "1대대", "team": "충성팀(윤시온&김나래)", "phone": "", "time": "09:37:00"}, {"name": "천정민", "aff": "1대대", "team": "충성팀(윤시온&김나래)", "phone": "010-0000-0034", "time": "09:13:00"}, {"name": "방민호", "aff": "2대대", "team": "인내팀(한결민)", "phone": "010-0000-0040", "time": "09:10:00"}, {"name": "표동현", "aff": "2대대", "team": "인내팀(한결민)", "phone": "010-0000-0037", "time": "09:34:00"}, {"name": "남궁서진", "aff": "76정비대", "team": "인내팀(한결민)", "phone": "010-0000-0043", "time": "09:31:00"}, {"name": "조다윗", "aff": "공병", "team": "온유팀(오새벽&서하늘)", "phone": "", "time": "09:28:00"}, {"name": "최찬미", "aff": "공병", "team": "온유팀(오새벽&서하늘)", "phone": "010-0000-0046", "time": "09:07:00"}, {"name": "문지우", "aff": "군사경찰", "team": "기쁨팀(최다은)", "phone": "010-0000-0022", "time": "09:19:00"}, {"name": "유시온", "aff": "군사경찰", "team": "기쁨팀(최다은)", "phone": "010-0000-0025", "time": "09:40:00"}, {"name": "조은호", "aff": "방공", "team": "사랑팀(강세아&박주호)", "phone": "010-0000-0007", "time": "09:49:00"}, {"name": "전수아", "aff": "방첩대", "team": "기쁨팀(최다은)", "phone": "010-0000-0019", "time": "09:43:00"}, {"name": "황재민", "aff": "본부대", "team": "화평팀(이하람&정미경)", "phone": "010-0000-0016", "time": "09:22:00"}, {"name": "서은찬", "aff": "수색대", "team": "화평팀(이하람&정미경)", "phone": "010-0000-0013", "time": "09:46:00"}, {"name": "임한결", "aff": "수색대", "team": "화평팀(이하람&정미경)", "phone": "010-0000-0010", "time": "09:25:00"}, {"name": "임슬기", "aff": "정보통신", "team": "온유팀(오새벽&서하늘)", "phone": "010-0000-0052", "time": "09:49:00"}], "newbies": []};
+const C = {"dates": ["2026-07-05", "2026-07-12", "2026-07-19", "2026-07-26", "2026-08-02", "2026-08-09", "2026-08-16", "2026-08-23", "2026-08-30"], "counts": [54, 54, 54, 54, 54, 54, 54, 54, 1], "deltas": [null, 0, 0, 0, 0, 0, 0, 0, -53], "rates": [null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -98.1], "total": 433, "days": 9, "avg": 48.1, "thiswk": "2026-08-30 1명", "lastwk": "2026-08-23 54명", "maxd": "2026-07-05 54명", "absent": [{"name": "갈승현", "aff": "군지대", "phone": "010-0000-0035", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "강민석", "aff": "102포병", "phone": "010-0000-0006", "w": 1, "nb": false, "team": "사랑팀(강세아&박주호)"}, {"name": "강바울", "aff": "공병", "phone": "010-0000-0048", "w": 1, "nb": false, "team": "온유팀(오새벽&서하늘)"}, {"name": "구본찬", "aff": "1대대", "phone": "010-0000-0029", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "권혜원", "aff": "수색대", "phone": "010-0000-0015", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "김태윤", "aff": "군사경찰", "phone": "010-0000-0021", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "김하늘", "aff": "102직할", "phone": "010-0000-0001", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "남궁서진", "aff": "76정비대", "phone": "010-0000-0043", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "노준희", "aff": "1대대", "phone": "010-0000-0028", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "류하진", "aff": "1대대", "phone": "010-0000-0027", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "모건우", "aff": "1대대", "phone": "010-0000-0032", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "문지우", "aff": "군사경찰", "phone": "010-0000-0022", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "박예성", "aff": "76정비대", "phone": "010-0000-0045", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "방민호", "aff": "2대대", "phone": "010-0000-0040", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "배성민", "aff": "군지대", "phone": "010-0000-0036", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "백하준", "aff": "군사경찰", "phone": "010-0000-0024", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "서은찬", "aff": "수색대", "phone": "010-0000-0013", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "송다훈", "aff": "정보대", "phone": "010-0000-0018", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "신주안", "aff": "수색대", "phone": "", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "심재혁", "aff": "1대대", "phone": "", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "안예원", "aff": "본부대", "phone": "010-0000-0017", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "양예준", "aff": "군사경찰", "phone": "", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "오예림", "aff": "수색대", "phone": "010-0000-0012", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "우주환", "aff": "1대대", "phone": "010-0000-0030", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "원민재", "aff": "1대대", "phone": "010-0000-0033", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "위은우", "aff": "2대대", "phone": "", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "유시온", "aff": "군사경찰", "phone": "010-0000-0025", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "윤누리", "aff": "공병", "phone": "010-0000-0050", "w": 1, "nb": false, "team": "온유팀(오새벽&서하늘)"}, {"name": "윤지안", "aff": "방공", "phone": "010-0000-0008", "w": 1, "nb": false, "team": "사랑팀(강세아&박주호)"}, {"name": "이명준", "aff": "102직할", "phone": "010-0000-0002", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "이민지", "aff": "76정비대", "phone": "010-0000-0044", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "임슬기", "aff": "정보통신", "phone": "010-0000-0052", "w": 1, "nb": false, "team": "온유팀(오새벽&서하늘)"}, {"name": "임한결", "aff": "수색대", "phone": "010-0000-0010", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "장도현", "aff": "방공", "phone": "", "w": 1, "nb": false, "team": "사랑팀(강세아&박주호)"}, {"name": "전수아", "aff": "방첩대", "phone": "010-0000-0019", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "정요한", "aff": "공병", "phone": "010-0000-0047", "w": 1, "nb": false, "team": "온유팀(오새벽&서하늘)"}, {"name": "정유진", "aff": "102포병", "phone": "010-0000-0005", "w": 1, "nb": false, "team": "사랑팀(강세아&박주호)"}, {"name": "조다윗", "aff": "공병", "phone": "", "w": 1, "nb": false, "team": "온유팀(오새벽&서하늘)"}, {"name": "조은호", "aff": "방공", "phone": "010-0000-0007", "w": 1, "nb": false, "team": "사랑팀(강세아&박주호)"}, {"name": "지이준", "aff": "2대대", "phone": "010-0000-0042", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "진도윤", "aff": "1대대", "phone": "010-0000-0026", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "천정민", "aff": "1대대", "phone": "010-0000-0034", "w": 1, "nb": false, "team": "충성팀(윤시온&김나래)"}, {"name": "최우성", "aff": "102군지", "phone": "010-0000-0004", "w": 1, "nb": false, "team": "사랑팀(강세아&박주호)"}, {"name": "최찬미", "aff": "공병", "phone": "010-0000-0046", "w": 1, "nb": false, "team": "온유팀(오새벽&서하늘)"}, {"name": "추영준", "aff": "2대대", "phone": "010-0000-0038", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "표동현", "aff": "2대대", "phone": "010-0000-0037", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "한소망", "aff": "수색대", "phone": "010-0000-0011", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}, {"name": "한소희", "aff": "정보통신", "phone": "010-0000-0053", "w": 1, "nb": false, "team": "온유팀(오새벽&서하늘)"}, {"name": "현규민", "aff": "2대대", "phone": "010-0000-0039", "w": 1, "nb": false, "team": "인내팀(한결민)"}, {"name": "홍건희", "aff": "군사경찰", "phone": "010-0000-0020", "w": 1, "nb": false, "team": "기쁨팀(최다은)"}, {"name": "황재민", "aff": "본부대", "phone": "010-0000-0016", "w": 1, "nb": false, "team": "화평팀(이하람&정미경)"}], "bday": [{"name": "이명준", "aff": "102직할", "team": "기쁨팀(최다은)", "phone": "010-0000-0002", "bday": "8월 3일", "day": 3}, {"name": "윤지안", "aff": "방공", "team": "사랑팀(강세아&박주호)", "phone": "010-0000-0008", "bday": "8월 8일", "day": 8}, {"name": "유시온", "aff": "군사경찰", "team": "기쁨팀(최다은)", "phone": "010-0000-0025", "bday": "8월 17일", "day": 17}, {"name": "강바울", "aff": "공병", "team": "온유팀(오새벽&서하늘)", "phone": "010-0000-0048", "bday": "8월 22일", "day": 22}, {"name": "배성민", "aff": "군지대", "team": "충성팀(윤시온&김나래)", "phone": "010-0000-0036", "bday": "8월 22일", "day": 22}], "teams": [{"team": "사랑팀(강세아&박주호)", "count": 1}], "team_attendees": [{"name": "박서연", "aff": "102군지", "team": "사랑팀(강세아&박주호)", "phone": "010-0000-0003", "time": "18:51:27"}], "newbies": []};
 /* 연속 미출석자 명단 (1~4주) */
 (function () {
   const badges = { 1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4' };
@@ -102,16 +108,62 @@ const C = {"dates": ["2026-07-15", "2026-07-29", "2026-08-12", "2026-08-26"], "c
   document.getElementById('abs-wrap').innerHTML = html;
 })();
 
-/* 팀 출석자 상세 명단 */
+/* 팀별 출석 인원 (이번 주) */
 (function () {
-  const rows = (C.team_attendees || []).map(function (a, idx) {
-    return '<tr><td>' + (idx + 1) + '</td><td>' + a.name + '</td><td>' + a.aff + '</td><td>' + a.team + '</td>' +
-      '<td>' + (a.phone ? a.phone : '<span class="nophone">-</span>') + '</td><td>' + a.time + '</td></tr>';
+  const rows = C.teams.map(function (t) {
+    return '<tr><td>' + t.team + '</td><td>' + t.count + '명</td></tr>';
   }).join('');
-  var html = '<table class="abs"><tr><th>No</th><th>이름</th><th>소속</th><th>팀</th><th>휴대폰</th><th>출석시각</th></tr>' + rows + '</table>';
+  var html = '<table class="abs"><tr><th>팀</th><th>출석 인원</th></tr>' + rows + '</table>';
   document.getElementById('team-wrap').innerHTML = html;
 })();
 
+/* 새신우 현황 */
+(function () {
+  const list = C.newbies || [];
+  if (!list.length) {
+    document.getElementById('newbie-wrap').innerHTML = '<p style="text-align:center;color:#888;margin:4px 0">새신우가 없습니다.</p>';
+    return;
+  }
+  const badges = { 1: 'b1', 2: 'b2', 3: 'b3', 4: 'b4' };
+  const rows = list.map(function (n, idx) {
+    let att;
+    if (n.att) {
+      att = '출석 ' + n.att;
+    } else {
+      const wk = n.w || 0;
+      att = wk >= 1
+        ? '<span class="badge ' + badges[Math.min(wk, 4)] + '">' + Math.min(wk, 99) + '주 연속 미출석</span>'
+        : '<span style="color:#e03131">미출석</span>';
+    }
+    const cls = (!n.att && n.w >= 1) ? ' class="w' + Math.min(n.w, 4) + '"' : '';
+    return '<tr' + cls + '><td>' + (idx + 1) + '</td><td>' + n.name + '</td><td>' + n.aff + '</td><td>' + n.team + '</td>' +
+      '<td>' + (n.phone ? n.phone : '<span class="nophone">-</span>') + '</td>' +
+      '<td>' + att + '</td></tr>';
+  }).join('');
+  var html = '<table class="abs"><tr><th>No</th><th>이름</th><th>소속</th><th>팀</th><th>휴대폰</th><th>이번 주 출결</th></tr>' + rows + '</table>';
+  document.getElementById('newbie-wrap').innerHTML = html;
+})();
+
+/* 이달의 생일자 - 팀별로 묶어 표시 */
+(function () {
+  const byTeam = {};
+  C.bday.forEach(function (b) {
+    const k = b.team || '-';
+    if (!byTeam[k]) byTeam[k] = [];
+    byTeam[k].push(b);
+  });
+  const teams = Object.keys(byTeam).sort();
+  let html = '';
+  teams.forEach(function (k) {
+    html += '<div class="teamhead">' + k + '</div>';
+    const rows = byTeam[k].map(function (b) {
+      return '<tr><td>' + b.bday + '</td><td>' + b.name + '</td><td>' + b.aff + '</td>' +
+        '<td>' + (b.phone ? b.phone : '<span class="nophone">-</span>') + '</td></tr>';
+    }).join('');
+    html += '<table class="abs"><tr><th>생일</th><th>이름</th><th>소속</th><th>휴대폰</th></tr>' + rows + '</table>';
+  });
+  document.getElementById('bday-wrap').innerHTML = html;
+})();
 </script>
 </body>
 </html>

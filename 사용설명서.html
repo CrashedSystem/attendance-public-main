@@ -130,7 +130,7 @@
   <h3>기술 구성</h3>
   <table>
     <tr><th>항목</th><th>내용</th></tr>
-    <tr><td>서버</td><td>Flask (Python) — <code>127.0.0.1:5000</code> 에서 동작</td></tr>
+    <tr><td>서버</td><td>Flask (Python) — <code>127.0.0.1:8665</code> 에서 동작 (포트 충돌 방지)</td></tr>
     <tr><td>데이터베이스</td><td>SQLite (단일 파일, 별도 설치 불필요)</td></tr>
     <tr><td>화면</td><td>브라우저(키오스크 모드) — Chrome / Edge 전체 화면</td></tr>
     <tr><td>보고서</td><td>독립 HTML 파일 + 팀별 PNG 이미지 생성 가능</td></tr>
@@ -151,14 +151,15 @@
   <pre>pip install -r requirements.txt</pre>
   <p>내용물은 Flask 하나뿐이며, 이미 설치되어 있다면 생략해도 됩니다.</p>
   <h3>2-3. 실행</h3>
-  <p>프로그램 폴더에서 다음 배치 파일 중 하나를 더블클릭합니다.</p>
+  <p>프로그램 폴더에서 다음 중 하나를 더블클릭합니다.</p>
   <table>
     <tr><th>파일</th><th>용도</th></tr>
-    <tr><td><code>start_kiosk.bat</code></td><td>정상(운영) 모드로 실행 — 서버 시작 후 Chrome/Edge를 전체 화면 키오스크로 엽니다.</td></tr>
-    <tr><td><code>start_kiosk_dev.bat</code></td><td>개발(테스트) 모드로 실행 — 화면에 “(개발자 모드)” 표시가 나타납니다.</td></tr>
+    <tr><td><code>kiosk.exe</code></td><td><b>원터치 실행 파일</b> — 서버 시작 + DB 자동 백업 + 전체화면 브라우저까지 한 번에 (build_exe.bat로 생성)</td></tr>
+    <tr><td><code>start_kiosk.bat</code></td><td>배치 실행 — kiosk.exe 없이 Python으로 직접 실행 (서버 시작 후 Chrome/Edge 전체 화면)</td></tr>
+    <tr><td><code>restore_db.bat</code></td><td>DB 복원 — backups 폴더의 가장 최근 백업(.db.bak)으로 군종.db 복원</td></tr>
   </table>
-  <div class="note"><b>수동 실행:</b> 명령 프롬프트에서 <code>python app.py</code> (운영) 또는 <code>python app.py dev</code> (개발)로도 실행하고, 브라우저에서 <code>http://localhost:5000</code> 을 엽니다.</div>
-  <div class="tip"><b>모드 구분:</b> 운영(<code>commercial</code>)과 개발(<code>dev</code>) 환경의 <b>출석 기록과 보고서가 별도로 저장</b>됩니다. 테스트 중 발생한 기록이 실제 예배 기록에 섞이지 않도록 하려면 테스트는 반드시 dev로 하세요.</div>
+  <div class="note"><b>수동 실행:</b> 명령 프롬프트에서 <code>python app.py</code> 로 실행하고, 브라우저에서 <code>http://localhost:8665</code> 을 엽니다.</div>
+  <div class="tip"><b>DB 백업:</b> 서버가 시작될 때마다 <code>backups\군종_날짜_시간.db.bak</code> 파일이 자동 생성됩니다. 백업은 최신 30개까지 보관됩니다.</div>
 </section>
 
 <!-- 3. 출석 -->

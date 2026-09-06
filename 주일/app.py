@@ -9,14 +9,17 @@
 from flask import Flask, send_from_directory
 from werkzeug.serving import make_server
 
-from config import BASE_DIR
+import os
+
+from config import BASE_DIR, PORT, RES_DIR
+from db_backup import daily_backup
 from models.database import init_db
 from routes import (admin_absence, admin_attendance, admin_auth,
                     admin_import, admin_team, admin_time, admin_user,
                     public, report)
 from server_ctl import register_server
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
+app = Flask(__name__, static_folder=os.path.join(RES_DIR, 'static'), static_url_path='/static')
 
 
 # ---------------------------------------------------------------------------
@@ -45,10 +48,18 @@ def index():
 # ---------------------------------------------------------------------------
 # 초기화 및 실행
 # ---------------------------------------------------------------------------
+# 시작 시 DB 자동 백업 (하루 1회, backups/ 폴더에 .db.bak 형식)
+try:
+    _bak = daily_backup()
+    if _bak:
+        print('[백업] %s' % _bak)
+except Exception:
+    pass
+
 init_db()
 
 if __name__ == '__main__':
-    _server = make_server('127.0.0.1', 8000, app)
+    _server = make_server('127.0.0.1', PORT, app)
     register_server(_server)
     try:
         _server.serve_forever()

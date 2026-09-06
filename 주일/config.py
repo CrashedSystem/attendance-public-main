@@ -7,8 +7,19 @@
 import os
 import sys
 
-# 프로젝트 루트 (config.py가 있는 폴더)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 프로젝트 루트
+# - Python 실행: config.py가 있는 폴더
+# - PyInstaller EXE(kiosk.exe): EXE가 있는 폴더 (데이터가 여기 저장/백업됨)
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(os.path.abspath(sys.executable))
+    RES_DIR = sys._MEIPASS  # EXE에 내장된 읽기 전용 파일(static 등) 압축 해제 폴더
+    # exe에 내장된 Chromium(ms-playwright)을 사용하도록 지정
+    _pw = os.path.join(RES_DIR, 'ms-playwright')
+    if os.path.isdir(_pw):
+        os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', _pw)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    RES_DIR = BASE_DIR
 
 # SQLite 데이터베이스 경로
 DB_PATH = os.path.join(BASE_DIR, '군종.db')
@@ -30,3 +41,10 @@ SERVER_ENV = os.environ.get('SERVER_ENV', 'commercial')
 for _a in sys.argv[1:]:
     if _a in ('dev', 'commercial'):
         SERVER_ENV = _a
+
+# 서버 포트 (기본 8665 - 5000/8000 등 흔한 포트와 충돌 회피)
+# 환경변수 KIOSK_PORT 또는 실행인자 --port=NNNN 로 변경 가능
+PORT = int(os.environ.get('KIOSK_PORT', '8665'))
+for _a in sys.argv[1:]:
+    if _a.startswith('--port='):
+        PORT = int(_a.split('=', 1)[1])
