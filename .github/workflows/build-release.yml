@@ -43,7 +43,7 @@ jobs:
           cp  주일/dist/kiosk.exe     release/kiosk.exe
           cp  주일/start_kiosk.bat    release/start_kiosk.bat
           cp  주일/restore_db.bat     release/restore_db.bat
-          cp  사용설명서.html          release/사용설명서.html
+          cp  사용설명서.html          release/manual.html
 
       - name: GitHub Release 생성
         shell: bash
