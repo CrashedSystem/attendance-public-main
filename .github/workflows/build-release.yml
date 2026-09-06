@@ -32,16 +32,12 @@ jobs:
 
       - name: kiosk.exe 빌드 (DB 미포함 — 최초 실행 시 빈 DB 자동 생성)
         working-directory: 주일
+        shell: pwsh
         run: |
-          pyinstaller --noconfirm --onefile --noconsole --name kiosk \
-            --add-data "static;static" \
-            --add-data "report_template.html;." \
-            --hidden-import "playwright.sync_api" \
-            --hidden-import "playwright.async_api" \
-            --add-binary "$LOCALAPPDATA/ms-playwright;ms-playwright" \
-            kiosk_main.py
+          pyinstaller --noconfirm --onefile --noconsole --name kiosk --add-data "static;static" --add-data "report_template.html;." --hidden-import "playwright.sync_api" --hidden-import "playwright.async_api" --add-binary "$env:LOCALAPPDATA/ms-playwright;ms-playwright" kiosk_main.py
 
       - name: 배포 파일 모음
+        shell: bash
         run: |
           mkdir -p release
           cp  주일/dist/kiosk.exe     release/kiosk.exe
@@ -50,6 +46,7 @@ jobs:
           cp  사용설명서.html          release/사용설명서.html
 
       - name: GitHub Release 생성
+        shell: bash
         run: |
           if [ -n "${{ inputs.version }}" ]; then
             VERSION="${{ inputs.version }}"
